@@ -76,6 +76,9 @@ window.__ModuleLoader__.load({
 			heading: "dlc_heading",
 			row: "dlc_row",
 			status: "dlc_status",
+			accountRow: "dlc_accountRow",
+			accountLabel: "dlc_accountLabel",
+			accountSelect: "dlc_accountSelect",
 			tiles: "dlc_tiles",
 			total: "dlc_total",
 			totalLabel: "dlc_totalLabel",
@@ -125,6 +128,14 @@ window.__ModuleLoader__.load({
 .dlc_heading{color:var(--dsw-alias-label-primary);margin:0;font-size:13px;font-weight:500;line-height:1.5}
 .dlc_row{align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;display:flex}
 .dlc_status{align-items:center;gap:8px;color:var(--dsw-alias-label-primary);font-size:13px;font-weight:500;line-height:1.5;display:flex}
+/* Account picker: which signed-in Loomy account chat requests run as. */
+.dlc_accountRow{align-items:center;gap:10px;display:flex;flex-wrap:wrap}
+.dlc_accountLabel{color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5;white-space:nowrap}
+.dlc_accountSelect{appearance:none;font:inherit;font-size:13px;line-height:1.5;color:var(--dsw-alias-label-primary);
+  background:var(--dsw-alias-bg-layer-3);border:.5px solid var(--dsw-alias-border-l4);border-radius:8px;
+  padding:5px 12px;min-width:180px;cursor:pointer;outline:none}
+.dlc_accountSelect:hover{border-color:var(--dsw-alias-label-dimmed)}
+.dlc_accountSelect:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
 .dlc_tiles{flex-wrap:wrap;gap:12px;display:flex}
 /* The headline figure: the same "permanent + daily" total the composer pill
    shows, so the two surfaces can never read as different numbers. The split
@@ -402,7 +413,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/** Render Loomy sign-in state and points as one expandable card. */
-		function LoomyPluginCard({ t }) {
+		function LoomyPluginCard({ t, activeAccount, setActiveAccount }) {
 			if (t === void 0) throw new Error("Loomy plugin card requires its translation function");
 			const [open, setOpen] = (0, react.useState)(false);
 			const [status, setStatus] = (0, react.useState)({ status: "signed-out" });
@@ -516,6 +527,35 @@ window.__ModuleLoader__.load({
 								})]
 							})
 						}),
+						status.status === "signed-in" && (status.accounts?.length ?? 0) > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: CSS$1.section,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: CSS$1.accountRow,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+									className: CSS$1.accountLabel,
+									htmlFor: "dlc-active-account",
+									children: t("activeAccountLabel")
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
+									id: "dlc-active-account",
+									className: CSS$1.accountSelect,
+									value: activeAccount?.() ?? status.activeUserId ?? status.accounts?.[0]?.userId ?? "",
+									onChange: (event) => {
+										const userId = event.target.value;
+										setActiveAccount?.(userId);
+										window.setTimeout(() => {
+											refresh(void 0, true);
+										}, 50);
+									},
+									children: status.accounts?.map((account) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
+										value: account.userId,
+										children: account.maskedPhone ?? account.userId
+									}, account.userId))
+								})]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+								className: CSS$1.hint,
+								children: t("activeAccountHint")
+							})]
+						}) : null,
 						status.status === "signed-in" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: CSS$1.tabs,
 							role: "tablist",
@@ -1205,6 +1245,8 @@ window.__ModuleLoader__.load({
 			refresh: "Refresh",
 			refreshing: "Refreshing…",
 			requestFailed: "Request failed",
+			activeAccountLabel: "Chat account",
+			activeAccountHint: "Chat requests run as the selected account. Points still show Loomy’s currently displayed balance.",
 			pillLabel: "Loomy · Points {total}",
 			controlAria: "View Loomy points and model rates",
 			popoverTitle: "Loomy points & rates",
@@ -1252,6 +1294,8 @@ window.__ModuleLoader__.load({
 			refresh: "刷新",
 			refreshing: "正在刷新…",
 			requestFailed: "请求失败",
+			activeAccountLabel: "聊天账号",
+			activeAccountHint: "聊天请求使用所选账号；积分仍显示 Loomy 客户端当前展示的余额。",
 			pillLabel: "Loomy · 剩余积分 {total}",
 			controlAria: "查看 Loomy 积分与模型倍率",
 			popoverTitle: "Loomy 积分与倍率",
@@ -1273,7 +1317,11 @@ window.__ModuleLoader__.load({
 		* named in the package's `dsh.client.inject` list, so cordis has activated
 		* them before this plugin's fiber starts.
 		*/
-		const inject = ["slots", "locale"];
+		const inject = [
+			"slots",
+			"locale",
+			"configForms"
+		];
 		/**
 		* Register card copy and the Loomy card under Plugin configuration.
 		*
@@ -1290,11 +1338,37 @@ window.__ModuleLoader__.load({
 					en
 				}), "dsh-loomy-connect: settings copy");
 				const t = ctx.locale.bind(namespace);
+				let activeAccount = () => void 0;
+				let setActiveAccount = () => void 0;
+				try {
+					const configForms = ctx.configForms;
+					if (configForms === void 0) throw new Error("configForms service not present");
+					const form = configForms.get("loomy");
+					const read = () => {
+						const value = form.getSnapshot().value || {};
+						activeAccount = () => value.activeUserId;
+					};
+					read();
+					ctx.effect(() => form.subscribe(read), "dsh-loomy-connect: active account subscribe");
+					setActiveAccount = (userId) => {
+						form.mutate([{
+							op: "set",
+							path: ["activeUserId"],
+							value: userId
+						}]);
+					};
+				} catch (error) {
+					console.error("[dsh-loomy-connect] configForms unavailable; account picker is read-only:", error);
+				}
 				ctx.slots.inject("settings.plugin.item", () => ctx.slots.register({
 					name: "settings.plugin.item",
 					key: "loomy",
 					priority: 30,
-					inject: () => ({ t })
+					inject: () => ({
+						t,
+						activeAccount,
+						setActiveAccount
+					})
 				}, LoomyPluginCard));
 				try {
 					ctx.slots.inject("conversation.input.right", () => ctx.slots.register({

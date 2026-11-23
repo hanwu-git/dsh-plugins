@@ -31,6 +31,10 @@ import { dailyExpiryText, dailyPointsExpiry, formatNumber, formatRate, formatTim
 /** Localized copy injected by the browser-plugin registration. */
 export interface LoomyPluginCardInjected {
   t: (key: LoomySettingsKey, params?: Record<string, unknown>) => string
+  /** userId of the account currently chosen to serve chat requests. */
+  activeAccount?: () => string | undefined
+  /** Persist the chosen account into this plugin's config section. */
+  setActiveAccount?: (userId: string) => void
 }
 
 /** Props delivered by the Plugin configuration item slot. */
@@ -127,7 +131,7 @@ function PointsTotal({ label, value, hint }: { label: string; value: number; hin
 }
 
 /** Render Loomy sign-in state and points as one expandable card. */
-export function LoomyPluginCard({ t }: LoomyPluginCardProps): ReactElement {
+export function LoomyPluginCard({ t, activeAccount, setActiveAccount }: LoomyPluginCardProps): ReactElement {
   if (t === undefined) throw new Error('Loomy plugin card requires its translation function')
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState<LoomyWebStatus>({ status: 'signed-out' })
@@ -248,6 +252,33 @@ export function LoomyPluginCard({ t }: LoomyPluginCardProps): ReactElement {
                 </Button>
               </div>
             </div>
+            {status.status === 'signed-in' && (status.accounts?.length ?? 0) > 0
+              ? (
+                <div className={CSS.section}>
+                  <div className={CSS.accountRow}>
+                    <label className={CSS.accountLabel} htmlFor="dlc-active-account">{t('activeAccountLabel')}</label>
+                    <select
+                      id="dlc-active-account"
+                      className={CSS.accountSelect}
+                      value={activeAccount?.() ?? status.activeUserId ?? status.accounts?.[0]?.userId ?? ''}
+                      onChange={(event) => {
+                        const userId = event.target.value
+                        setActiveAccount?.(userId)
+                        // Re-read status so the header/account label follows the pick.
+                        window.setTimeout(() => { void refresh(undefined, true) }, 50)
+                      }}
+                    >
+                      {status.accounts?.map(account => (
+                        <option key={account.userId} value={account.userId}>
+                          {account.maskedPhone ?? account.userId}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className={CSS.hint}>{t('activeAccountHint')}</p>
+                </div>
+              )
+              : null}
             {status.status === 'signed-in'
               ? (
                 <>

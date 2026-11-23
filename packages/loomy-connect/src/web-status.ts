@@ -15,15 +15,19 @@ import type { LoomyCredential } from './auth.ts'
 import { loopbackHost, loopbackOrigin } from './loopback.ts'
 import type { LoomyPointsSummary } from './points.ts'
 import { LOOMY_STATUS_PATH } from './status-paths.ts'
-import type { LoomyWebModel, LoomyWebStatus } from './status-paths.ts'
+import type { LoomyWebAccount, LoomyWebModel, LoomyWebStatus } from './status-paths.ts'
 
 export { LOOMY_STATUS_PATH } from './status-paths.ts'
 export type { LoomyWebStatus } from './status-paths.ts'
 
 /** Constructor dependencies. */
 export interface LoomyStatusRouteOptions {
-  /** Current sign-in state; `undefined` means signed out. */
+  /** Credential for the currently selected account; `undefined` means signed out. */
   credential: () => Promise<LoomyCredential | undefined>
+  /** userId the user chose in the settings card, if any. */
+  activeAccount?: () => string | undefined
+  /** All signed-in accounts, for the settings card's account picker. */
+  accounts?: () => Promise<LoomyWebAccount[]>
   /** Points summary, or `undefined` when Loomy has not cached one. */
   points: () => Promise<LoomyPointsSummary | undefined>
   /** How many models the plugin currently serves. */
@@ -80,11 +84,15 @@ export async function loomyWebStatus(deps: LoomyStatusRouteOptions, force = fals
   }
   if (credential === undefined) return { status: 'signed-out' }
   const models = deps.models?.()
+  const chosen = deps.activeAccount?.()?.trim()
+  const accounts = deps.accounts === undefined ? undefined : await deps.accounts().catch(() => undefined)
   const status: LoomyWebStatus = {
     status: 'signed-in',
     modelCount: deps.modelCount(),
     ...models === undefined || models.length === 0 ? {} : { models },
     ...credential.maskedPhone === undefined ? {} : { account: credential.maskedPhone },
+    ...chosen === undefined || chosen === '' ? {} : { activeUserId: chosen },
+    ...accounts === undefined || accounts.length === 0 ? {} : { accounts },
   }
   try {
     const points = await deps.points()

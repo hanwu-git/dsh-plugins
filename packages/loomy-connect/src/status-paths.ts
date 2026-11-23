@@ -40,6 +40,12 @@ export interface LoomyWebModel {
   contextWindow?: number
 }
 
+/** A signed-in account the settings card can pick from. */
+export interface LoomyWebAccount {
+  userId: string
+  maskedPhone?: string
+}
+
 /** The JSON document the plugin card renders. */
 export type LoomyWebStatus =
   | { status: 'signed-out' }
@@ -47,6 +53,10 @@ export type LoomyWebStatus =
     status: 'signed-in'
     /** Masked sign-in identity (Loomy stores a masked phone number). */
     account?: string
+    /** userId of the account currently chosen to serve chat requests. */
+    activeUserId?: string
+    /** All accounts Loomy has signed in on this machine, newest login first. */
+    accounts?: LoomyWebAccount[]
     /** How many models the plugin is currently serving. */
     modelCount: number
     /** Every model the account can reach, including image generators. */

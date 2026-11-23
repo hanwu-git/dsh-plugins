@@ -131,14 +131,47 @@ export function extractLoomyAuthSessions(text: string): LoomyCredential[] {
   return found.map(entry => entry.credential)
 }
 
-/** The newest session in Loomy's localStorage, or undefined when there is none. */
-export async function readLoomySessionFromStorage(dir?: string): Promise<LoomyCredential | undefined> {
+/**
+ * Every distinct account Loomy has signed in on this machine, deduplicated by
+ * `userId` and ordered by the newest login first. The renderer's LevelDB log is
+ * append-only, so the same account can appear several times; only its latest
+ * session matters. This is the list the settings card uses to let the user pick
+ * which account a chat request should run as.
+ */
+export async function readAllLoomyCredentials(dir?: string): Promise<LoomyCredential[]> {
   const path = dir ?? process.env.LOOMY_LOCAL_STORAGE_DIR ?? defaultLoomyLocalStorageDir()
   try {
-    const sessions: LoomyCredential[] = []
-    for (const text of await readLevelDbTexts(path)) sessions.push(...extractLoomyAuthSessions(text))
-    return sessions.at(-1)
-  } catch { return undefined }
+    const byUser = new Map<string, LoomyCredential>()
+    for (const text of await readLevelDbTexts(path)) {
+      // extractLoomyAuthSessions returns oldest-first, so a later record for
+      // the same userId naturally overwrites the earlier one.
+      for (const credential of extractLoomyAuthSessions(text)) byUser.set(credential.userId, credential)
+    }
+    return [...byUser.values()].reverse()
+  } catch { return [] }
+}
+
+/** The newest session in Loomy's localStorage, or undefined when there is none. */
+export async function readLoomySessionFromStorage(dir?: string): Promise<LoomyCredential | undefined> {
+  return (await readAllLoomyCredentials(dir))[0]
+}
+
+/**
+ * Resolve the credential a chat request should use.
+ *
+ * `activeUserId` is the account chosen in the settings card. When it is set and
+ * that account is still cached, use it; otherwise fall back to the newest
+ * signed-in account so a stale preference can never leave the plugin without a
+ * credential. Points stay on Loomy's own current view (the card reads the
+ * renderer's cache) — this function only decides which session sends requests.
+ */
+export async function readLoomyCredentialFor(activeUserId: string | undefined, authFile?: string): Promise<LoomyCredential> {
+  if (activeUserId !== undefined && activeUserId.trim() !== '') {
+    const accounts = await readAllLoomyCredentials()
+    const picked = accounts.find(account => account.userId === activeUserId.trim())
+    if (picked !== undefined) return picked
+  }
+  return readLoomyCredential(authFile)
 }
 
 export async function readLoomyCredential(authFile?: string): Promise<LoomyCredential> {

@@ -3,6 +3,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
 import { readLoomyCredential } from './auth.ts'
+import type { LoomyCredential } from './auth.ts'
 import type { LoomyCatalog } from './catalog.ts'
 import { loopbackHost, loopbackOrigin } from './loopback.ts'
 import { LoomyUpstreamClient, prepareLoomyBody } from './upstream.ts'
@@ -14,7 +15,13 @@ export interface LoomyShim { ready: Promise<void>; baseUrl(): string; token(): s
  * only after a Harness restart — the shim is built before settings attach.
  */
 export type LoomyAuthFile = string | (() => string | undefined)
-export interface LoomyShimOptions { catalog: LoomyCatalog; authFile?: LoomyAuthFile; logger?: { warn(...args: unknown[]): void } }
+export interface LoomyShimOptions {
+  catalog: LoomyCatalog
+  authFile?: LoomyAuthFile
+  /** Supplies the credential for each request; defaults to the newest Loomy account. */
+  credential?: () => Promise<LoomyCredential>
+  logger?: { warn(...args: unknown[]): void }
+}
 
 /** Resolve a possibly-dynamic auth-file location at call time. */
 export function resolveAuthFile(value: LoomyAuthFile | undefined): string | undefined {
@@ -79,7 +86,9 @@ export function createLoomyShim(options: LoomyShimOptions): LoomyShim {
     res.on('close', () => { if (!res.writableEnded) controller.abort() })
     const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)])
     try {
-      const credential = await readLoomyCredential(resolveAuthFile(options.authFile))
+      const credential = options.credential
+        ? await options.credential()
+        : await readLoomyCredential(resolveAuthFile(options.authFile))
       const response = await client.chatStream(credential, prepareLoomyBody(await readBody(req)), signal)
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' })
       if (response.body === null) { res.end('data: [DONE]\n\n'); return }

@@ -1,5 +1,6 @@
 # Node / pnpm
 node_modules/
+**/node_modules
 *.log
 pnpm-debug.log*
 

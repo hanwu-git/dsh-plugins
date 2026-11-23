@@ -29,8 +29,26 @@ declare function parseLoomyAuth(text: string): LoomyCredential | undefined;
  * decides which is current rather than file order.
  */
 declare function extractLoomyAuthSessions(text: string): LoomyCredential[];
+/**
+ * Every distinct account Loomy has signed in on this machine, deduplicated by
+ * `userId` and ordered by the newest login first. The renderer's LevelDB log is
+ * append-only, so the same account can appear several times; only its latest
+ * session matters. This is the list the settings card uses to let the user pick
+ * which account a chat request should run as.
+ */
+declare function readAllLoomyCredentials(dir?: string): Promise<LoomyCredential[]>;
 /** The newest session in Loomy's localStorage, or undefined when there is none. */
 declare function readLoomySessionFromStorage(dir?: string): Promise<LoomyCredential | undefined>;
+/**
+ * Resolve the credential a chat request should use.
+ *
+ * `activeUserId` is the account chosen in the settings card. When it is set and
+ * that account is still cached, use it; otherwise fall back to the newest
+ * signed-in account so a stale preference can never leave the plugin without a
+ * credential. Points stay on Loomy's own current view (the card reads the
+ * renderer's cache) — this function only decides which session sends requests.
+ */
+declare function readLoomyCredentialFor(activeUserId: string | undefined, authFile?: string): Promise<LoomyCredential>;
 declare function readLoomyCredential(authFile?: string): Promise<LoomyCredential>;
 //#endregion
 //#region src/catalog.d.ts
@@ -95,6 +113,8 @@ type LoomyAuthFile = string | (() => string | undefined);
 interface LoomyShimOptions {
   catalog: LoomyCatalog;
   authFile?: LoomyAuthFile;
+  /** Supplies the credential for each request; defaults to the newest Loomy account. */
+  credential?: () => Promise<LoomyCredential>;
   logger?: {
     warn(...args: unknown[]): void;
   };
@@ -141,6 +161,11 @@ interface LoomyWebModel {
    */
   contextWindow?: number;
 }
+/** A signed-in account the settings card can pick from. */
+interface LoomyWebAccount {
+  userId: string;
+  maskedPhone?: string;
+}
 /** The JSON document the plugin card renders. */
 type LoomyWebStatus = {
   status: 'signed-out';
@@ -148,6 +173,10 @@ type LoomyWebStatus = {
   status: 'signed-in';
   /** Masked sign-in identity (Loomy stores a masked phone number). */
   account?: string;
+  /** userId of the account currently chosen to serve chat requests. */
+  activeUserId?: string;
+  /** All accounts Loomy has signed in on this machine, newest login first. */
+  accounts?: LoomyWebAccount[];
   /** How many models the plugin is currently serving. */
   modelCount: number;
   /** Every model the account can reach, including image generators. */
@@ -263,8 +292,12 @@ declare function resetLoomyPointsCache(): void;
 //#region src/web-status.d.ts
 /** Constructor dependencies. */
 interface LoomyStatusRouteOptions {
-  /** Current sign-in state; `undefined` means signed out. */
+  /** Credential for the currently selected account; `undefined` means signed out. */
   credential: () => Promise<LoomyCredential | undefined>;
+  /** userId the user chose in the settings card, if any. */
+  activeAccount?: () => string | undefined;
+  /** All signed-in accounts, for the settings card's account picker. */
+  accounts?: () => Promise<LoomyWebAccount[]>;
   /** Points summary, or `undefined` when Loomy has not cached one. */
   points: () => Promise<LoomyPointsSummary | undefined>;
   /** How many models the plugin currently serves. */
@@ -305,14 +338,17 @@ declare const inject: string[];
 declare const Config: Schema<Schemastery.ObjectS<{
   authFile: Schema<string, string>;
   configFile: Schema<string, string>;
+  activeUserId: Schema<string, string>;
 }>, Schemastery.ObjectT<{
   authFile: Schema<string, string>;
   configFile: Schema<string, string>;
+  activeUserId: Schema<string, string>;
 }>>;
 /** Config as seen inside {@link apply}. */
 interface ConfigShape {
   authFile?: string;
   configFile?: string;
+  activeUserId?: string;
 }
 /**
  * Settings namespace owning this provider's configuration section.
@@ -325,4 +361,4 @@ interface ConfigShape {
 declare const LOOMY_SETTINGS_NS = "loomy";
 declare function apply(ctx: Context, config?: ConfigShape): void;
 //#endregion
-export { Config, ConfigShape, LOOMY_API_BASE, LOOMY_AUTH_SESSION_KEY, LOOMY_POINTS_KEY, LOOMY_PROVIDER, LOOMY_SETTINGS_NS, LOOMY_STATUS_PATH, type LoomyAdapter, type LoomyAuthFile, LoomyCatalog, type LoomyCredential, type LoomyModel, type LoomyPointsSummary, type LoomyShim, type LoomyShimOptions, type LoomyStatusRouteOptions, LoomyUpstreamClient, type LoomyWebPoints, type LoomyWebStatus, apply, createLoomyAdapter, createLoomyShim, defaultLoomyAuthPath, defaultLoomyConfigPath, defaultLoomyLocalStorageDir, extractLoomyAuthSessions, extractLoomyPoints, inject, loomyStatusHandler, loomyWebStatus, loopbackHost, loopbackOrigin, name, newestLoomyPoints, parseLoomyApiModels, parseLoomyAuth, parseLoomyModels, parseLoomyPointsRecord, prepareLoomyBody, readLoomyCredential, readLoomyPoints, readLoomySessionFromStorage, registerLoomyStatusRoute, resetLoomyPointsCache, resolveAuthFile };
+export { Config, ConfigShape, LOOMY_API_BASE, LOOMY_AUTH_SESSION_KEY, LOOMY_POINTS_KEY, LOOMY_PROVIDER, LOOMY_SETTINGS_NS, LOOMY_STATUS_PATH, type LoomyAdapter, type LoomyAuthFile, LoomyCatalog, type LoomyCredential, type LoomyModel, type LoomyPointsSummary, type LoomyShim, type LoomyShimOptions, type LoomyStatusRouteOptions, LoomyUpstreamClient, type LoomyWebPoints, type LoomyWebStatus, apply, createLoomyAdapter, createLoomyShim, defaultLoomyAuthPath, defaultLoomyConfigPath, defaultLoomyLocalStorageDir, extractLoomyAuthSessions, extractLoomyPoints, inject, loomyStatusHandler, loomyWebStatus, loopbackHost, loopbackOrigin, name, newestLoomyPoints, parseLoomyApiModels, parseLoomyAuth, parseLoomyModels, parseLoomyPointsRecord, prepareLoomyBody, readAllLoomyCredentials, readLoomyCredential, readLoomyCredentialFor, readLoomyPoints, readLoomySessionFromStorage, registerLoomyStatusRoute, resetLoomyPointsCache, resolveAuthFile };

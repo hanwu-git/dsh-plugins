@@ -32,6 +32,9 @@ export const CSS = {
   heading: 'dlc_heading',
   row: 'dlc_row',
   status: 'dlc_status',
+  accountRow: 'dlc_accountRow',
+  accountLabel: 'dlc_accountLabel',
+  accountSelect: 'dlc_accountSelect',
   tiles: 'dlc_tiles',
   total: 'dlc_total',
   totalLabel: 'dlc_totalLabel',
@@ -82,6 +85,14 @@ const STYLESHEET = `
 .dlc_heading{color:var(--dsw-alias-label-primary);margin:0;font-size:13px;font-weight:500;line-height:1.5}
 .dlc_row{align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;display:flex}
 .dlc_status{align-items:center;gap:8px;color:var(--dsw-alias-label-primary);font-size:13px;font-weight:500;line-height:1.5;display:flex}
+/* Account picker: which signed-in Loomy account chat requests run as. */
+.dlc_accountRow{align-items:center;gap:10px;display:flex;flex-wrap:wrap}
+.dlc_accountLabel{color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5;white-space:nowrap}
+.dlc_accountSelect{appearance:none;font:inherit;font-size:13px;line-height:1.5;color:var(--dsw-alias-label-primary);
+  background:var(--dsw-alias-bg-layer-3);border:.5px solid var(--dsw-alias-border-l4);border-radius:8px;
+  padding:5px 12px;min-width:180px;cursor:pointer;outline:none}
+.dlc_accountSelect:hover{border-color:var(--dsw-alias-label-dimmed)}
+.dlc_accountSelect:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
 .dlc_tiles{flex-wrap:wrap;gap:12px;display:flex}
 /* The headline figure: the same "permanent + daily" total the composer pill
    shows, so the two surfaces can never read as different numbers. The split

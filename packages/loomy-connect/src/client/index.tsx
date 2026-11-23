@@ -30,7 +30,7 @@ export const name = 'dsh-loomy-connect-client'
  * named in the package's `dsh.client.inject` list, so cordis has activated
  * them before this plugin's fiber starts.
  */
-export const inject = ['slots', 'locale']
+export const inject = ['slots', 'locale', 'configForms']
 
 /**
  * Register card copy and the Loomy card under Plugin configuration.
@@ -45,11 +45,42 @@ export function apply(ctx: ClientContext): void {
     const namespace = 'settings.loomy'
     ctx.effect(() => ctx.locale.register(namespace, { zh, en }), 'dsh-loomy-connect: settings copy')
     const t = ctx.locale.bind(namespace) as LoomyPluginCardInjected['t']
+
+    // The selected chat account lives in this plugin's config section. Expose a
+    // narrow read/write face to the card so picking an account sends every later
+    // chat request as that account. The host half reads the same section through
+    // its settings source, so the change takes effect without a restart.
+    let activeAccount: () => string | undefined = () => undefined
+    let setActiveAccount: (userId: string) => void = () => undefined
+    try {
+      // configForms is a recent Client service and is not yet in the published
+      // Context typings; access it through a narrow structural cast.
+      type ConfigForm = {
+        getSnapshot(): { value?: unknown }
+        subscribe(listener: () => void): () => void
+        mutate(ops: { op: string; path: string[]; value: unknown }[]): void
+      }
+      const configForms = (ctx as unknown as { configForms?: { get(ns: string): ConfigForm } }).configForms
+      if (configForms === undefined) throw new Error('configForms service not present')
+      const form = configForms.get('loomy')
+      const read = () => {
+        const value = (form.getSnapshot().value || {}) as { activeUserId?: string }
+        activeAccount = () => value.activeUserId
+      }
+      read()
+      ctx.effect(() => form.subscribe(read), 'dsh-loomy-connect: active account subscribe')
+      setActiveAccount = (userId: string) => {
+        form.mutate([{ op: 'set', path: ['activeUserId'], value: userId }])
+      }
+    } catch (error: unknown) {
+      console.error('[dsh-loomy-connect] configForms unavailable; account picker is read-only:', error)
+    }
+
     ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
       name: 'settings.plugin.item',
       key: 'loomy',
       priority: 30,
-      inject: (): LoomyPluginCardInjected => ({ t }),
+      inject: (): LoomyPluginCardInjected => ({ t, activeAccount, setActiveAccount }),
     }, LoomyPluginCard))
 
     // Composer status pill — the Loomy counterpart of the Doubao rate control.

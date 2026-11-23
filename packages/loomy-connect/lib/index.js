@@ -323,16 +323,42 @@ function extractLoomyAuthSessions(text) {
 	found.sort((a, b) => a.time - b.time);
 	return found.map((entry) => entry.credential);
 }
-/** The newest session in Loomy's localStorage, or undefined when there is none. */
-async function readLoomySessionFromStorage(dir) {
+/**
+* Every distinct account Loomy has signed in on this machine, deduplicated by
+* `userId` and ordered by the newest login first. The renderer's LevelDB log is
+* append-only, so the same account can appear several times; only its latest
+* session matters. This is the list the settings card uses to let the user pick
+* which account a chat request should run as.
+*/
+async function readAllLoomyCredentials(dir) {
 	const path = dir ?? process.env.LOOMY_LOCAL_STORAGE_DIR ?? defaultLoomyLocalStorageDir();
 	try {
-		const sessions = [];
-		for (const text of await readLevelDbTexts(path)) sessions.push(...extractLoomyAuthSessions(text));
-		return sessions.at(-1);
+		const byUser = /* @__PURE__ */ new Map();
+		for (const text of await readLevelDbTexts(path)) for (const credential of extractLoomyAuthSessions(text)) byUser.set(credential.userId, credential);
+		return [...byUser.values()].reverse();
 	} catch {
-		return;
+		return [];
 	}
+}
+/** The newest session in Loomy's localStorage, or undefined when there is none. */
+async function readLoomySessionFromStorage(dir) {
+	return (await readAllLoomyCredentials(dir))[0];
+}
+/**
+* Resolve the credential a chat request should use.
+*
+* `activeUserId` is the account chosen in the settings card. When it is set and
+* that account is still cached, use it; otherwise fall back to the newest
+* signed-in account so a stale preference can never leave the plugin without a
+* credential. Points stay on Loomy's own current view (the card reads the
+* renderer's cache) — this function only decides which session sends requests.
+*/
+async function readLoomyCredentialFor(activeUserId, authFile) {
+	if (activeUserId !== void 0 && activeUserId.trim() !== "") {
+		const picked = (await readAllLoomyCredentials()).find((account) => account.userId === activeUserId.trim());
+		if (picked !== void 0) return picked;
+	}
+	return readLoomyCredential(authFile);
 }
 async function readLoomyCredential(authFile) {
 	const override = authFile ?? process.env["LOOMY_AUTH_FILE"];
@@ -865,7 +891,7 @@ function createLoomyShim(options) {
 		});
 		const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]);
 		try {
-			const credential = await readLoomyCredential(resolveAuthFile(options.authFile));
+			const credential = options.credential ? await options.credential() : await readLoomyCredential(resolveAuthFile(options.authFile));
 			const response = await client.chatStream(credential, prepareLoomyBody(await readBody(req)), signal);
 			res.writeHead(200, {
 				"Content-Type": "text/event-stream",
@@ -945,11 +971,15 @@ async function loomyWebStatus(deps, force = false) {
 	}
 	if (credential === void 0) return { status: "signed-out" };
 	const models = deps.models?.();
+	const chosen = deps.activeAccount?.()?.trim();
+	const accounts = deps.accounts === void 0 ? void 0 : await deps.accounts().catch(() => void 0);
 	const status = {
 		status: "signed-in",
 		modelCount: deps.modelCount(),
 		...models === void 0 || models.length === 0 ? {} : { models },
-		...credential.maskedPhone === void 0 ? {} : { account: credential.maskedPhone }
+		...credential.maskedPhone === void 0 ? {} : { account: credential.maskedPhone },
+		...chosen === void 0 || chosen === "" ? {} : { activeUserId: chosen },
+		...accounts === void 0 || accounts.length === 0 ? {} : { accounts }
 	};
 	try {
 		const points = await deps.points();
@@ -1013,7 +1043,8 @@ const inject = ["llm"];
 */
 const Config = Schema.object({
 	authFile: Schema.string().description("Loomy desktop auth file (defaults to the app's own location)"),
-	configFile: Schema.string().description("Loomy model configuration file (defaults to the app's own location)")
+	configFile: Schema.string().description("Loomy model configuration file (defaults to the app's own location)"),
+	activeUserId: Schema.string().description("Which signed-in Loomy account chat requests run as (empty = newest account)")
 });
 /**
 * Settings namespace owning this provider's configuration section.
@@ -1030,20 +1061,29 @@ function apply(ctx, config = {}) {
 	let source = () => config;
 	const authFile = () => source().authFile;
 	const configFile = () => source().configFile;
+	const activeUserId = () => source().activeUserId;
+	/** The selected account drives chat requests; points stay on Loomy's own view. */
+	const requestCredential = () => readLoomyCredentialFor(activeUserId(), authFile());
 	const catalog = new LoomyCatalog();
 	const shim = createLoomyShim({
 		catalog,
 		authFile,
+		credential: requestCredential,
 		logger: ctx.logger
 	});
 	ctx.inject(["webServer"], (webCtx) => registerLoomyStatusRoute(webCtx, {
 		credential: async () => {
 			try {
-				return await readLoomyCredential(authFile());
+				return await requestCredential();
 			} catch {
 				return;
 			}
 		},
+		activeAccount: () => activeUserId(),
+		accounts: async () => (await readAllLoomyCredentials()).map((account) => ({
+			userId: account.userId,
+			maskedPhone: account.maskedPhone
+		})),
 		points: () => readLoomyPoints(),
 		modelCount: () => catalog.current().length,
 		models: () => catalog.all().map((model) => ({
@@ -1098,7 +1138,7 @@ function apply(ctx, config = {}) {
 			if (closed) return;
 			try {
 				try {
-					await catalog.refreshFromApi(await readLoomyCredential(authFile()));
+					await catalog.refreshFromApi(await requestCredential());
 				} catch {
 					await catalog.refreshFromFile(configFile());
 				}
@@ -1111,4 +1151,4 @@ function apply(ctx, config = {}) {
 	}).catch((error) => ctx.logger.error("dsh-loomy-connect: failed to start loopback gateway", error));
 }
 //#endregion
-export { Config, LOOMY_API_BASE, LOOMY_AUTH_SESSION_KEY, LOOMY_POINTS_KEY, LOOMY_PROVIDER, LOOMY_SETTINGS_NS, LOOMY_STATUS_PATH, LoomyCatalog, LoomyUpstreamClient, apply, createLoomyAdapter, createLoomyShim, defaultLoomyAuthPath, defaultLoomyConfigPath, defaultLoomyLocalStorageDir, extractLoomyAuthSessions, extractLoomyPoints, inject, loomyStatusHandler, loomyWebStatus, loopbackHost, loopbackOrigin, name, newestLoomyPoints, parseLoomyApiModels, parseLoomyAuth, parseLoomyModels, parseLoomyPointsRecord, prepareLoomyBody, readLoomyCredential, readLoomyPoints, readLoomySessionFromStorage, registerLoomyStatusRoute, resetLoomyPointsCache, resolveAuthFile };
+export { Config, LOOMY_API_BASE, LOOMY_AUTH_SESSION_KEY, LOOMY_POINTS_KEY, LOOMY_PROVIDER, LOOMY_SETTINGS_NS, LOOMY_STATUS_PATH, LoomyCatalog, LoomyUpstreamClient, apply, createLoomyAdapter, createLoomyShim, defaultLoomyAuthPath, defaultLoomyConfigPath, defaultLoomyLocalStorageDir, extractLoomyAuthSessions, extractLoomyPoints, inject, loomyStatusHandler, loomyWebStatus, loopbackHost, loopbackOrigin, name, newestLoomyPoints, parseLoomyApiModels, parseLoomyAuth, parseLoomyModels, parseLoomyPointsRecord, prepareLoomyBody, readAllLoomyCredentials, readLoomyCredential, readLoomyCredentialFor, readLoomyPoints, readLoomySessionFromStorage, registerLoomyStatusRoute, resetLoomyPointsCache, resolveAuthFile };

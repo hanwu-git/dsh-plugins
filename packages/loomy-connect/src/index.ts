@@ -5,7 +5,7 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-settings'
 import { LoomyCatalog } from './catalog.ts'
 import { createLoomyAdapter, LOOMY_PROVIDER } from './adapter.ts'
-import { readLoomyCredential } from './auth.ts'
+import { readAllLoomyCredentials, readLoomyCredential, readLoomyCredentialFor, type LoomyCredential } from './auth.ts'
 import { createLoomyShim } from './shim.ts'
 import { readLoomyPoints, resetLoomyPointsCache } from './points.ts'
 import { registerLoomyStatusRoute } from './web-status.ts'
@@ -22,12 +22,14 @@ export const inject = ['llm']
 export const Config = Schema.object({
   authFile: Schema.string().description("Loomy desktop auth file (defaults to the app's own location)"),
   configFile: Schema.string().description("Loomy model configuration file (defaults to the app's own location)"),
+  activeUserId: Schema.string().description('Which signed-in Loomy account chat requests run as (empty = newest account)'),
 })
 
 /** Config as seen inside {@link apply}. */
 export interface ConfigShape {
   authFile?: string
   configFile?: string
+  activeUserId?: string
 }
 
 /**
@@ -51,16 +53,24 @@ export function apply(ctx: Context, config: ConfigShape = {}): void {
   let source: () => ConfigShape = () => config
   const authFile = (): string | undefined => source().authFile
   const configFile = (): string | undefined => source().configFile
+  const activeUserId = (): string | undefined => source().activeUserId
+  /** The selected account drives chat requests; points stay on Loomy's own view. */
+  const requestCredential = (): Promise<LoomyCredential> => readLoomyCredentialFor(activeUserId(), authFile())
 
   const catalog = new LoomyCatalog()
-  const shim = createLoomyShim({ catalog, authFile, logger: ctx.logger })
+  const shim = createLoomyShim({ catalog, authFile, credential: requestCredential, logger: ctx.logger })
 
   // The settings card lives in the browser, so it needs a host route to ask.
   // webServer is optional (a headless profile serves no browser).
   ctx.inject(['webServer'], webCtx => registerLoomyStatusRoute(webCtx, {
     credential: async () => {
-      try { return await readLoomyCredential(authFile()) } catch { return undefined }
+      try { return await requestCredential() } catch { return undefined }
     },
+    activeAccount: () => activeUserId(),
+    accounts: async () => (await readAllLoomyCredentials()).map(account => ({
+      userId: account.userId,
+      maskedPhone: account.maskedPhone,
+    })),
     points: () => readLoomyPoints(),
     modelCount: () => catalog.current().length,
     models: () => catalog.all().map(model => ({
@@ -111,7 +121,7 @@ export function apply(ctx: Context, config: ConfigShape = {}): void {
       // Loomy's own list is authoritative and carries the rates; the generated
       // OpenCode config is the fallback when the API cannot be reached.
       try {
-        try { await catalog.refreshFromApi(await readLoomyCredential(authFile())) }
+        try { await catalog.refreshFromApi(await requestCredential()) }
         catch { await catalog.refreshFromFile(configFile()) }
         loomy.invalidate()
       } catch (error) {
@@ -131,7 +141,9 @@ export {
   extractLoomyAuthSessions,
   LOOMY_AUTH_SESSION_KEY,
   parseLoomyAuth,
+  readAllLoomyCredentials,
   readLoomyCredential,
+  readLoomyCredentialFor,
   readLoomySessionFromStorage,
   type LoomyCredential,
 } from './auth.ts'
