@@ -1,0 +1,18 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M10 15.5H26C27.66 15.5 29 16.84 29 18.5V26.5C29 28.16 27.66 29.5 26 29.5H10C8.34 29.5 7 28.16 7 26.5V18.5C7 16.84 8.34 15.5 10 15.5Z" fill="url(#dsh-memory-nodes-lower)" fill-opacity="0.72"/>
+  <path d="M10 6.5H26C27.66 6.5 29 7.84 29 9.5V17.5C29 19.16 27.66 20.5 26 20.5H10C8.34 20.5 7 19.16 7 17.5V9.5C7 7.84 8.34 6.5 10 6.5Z" fill="url(#dsh-memory-nodes-upper)" fill-opacity="0.95"/>
+  <circle cx="11.6" cy="13.5" r="1.7" fill="#FFFFFF"/>
+  <path d="M16.5 13.5H24" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="11.6" cy="24.5" r="1.7" fill="#FFFFFF" fill-opacity="0.9"/>
+  <path d="M16.5 24.5H24" stroke="#45D9E7" stroke-width="2" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="dsh-memory-nodes-upper" x1="18" y1="6.5" x2="18" y2="20.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7AC2FF"/>
+      <stop offset="1" stop-color="#4A65E8"/>
+    </linearGradient>
+    <linearGradient id="dsh-memory-nodes-lower" x1="18" y1="15.5" x2="18" y2="29.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5B8DEF"/>
+      <stop offset="1" stop-color="#3A4FC0"/>
+    </linearGradient>
+  </defs>
+</svg>
