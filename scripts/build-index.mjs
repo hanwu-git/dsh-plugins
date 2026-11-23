@@ -25,7 +25,9 @@ const OUT = join(ROOT, 'index.json')
 const CHECK_ONLY = process.argv.includes('--check')
 const REPO_ARG = process.argv.indexOf('--repo-url')
 const REPO_URL = REPO_ARG >= 0 ? process.argv[REPO_ARG + 1] : 'https://github.com/hanwu-git/dsh-plugins'
-const INDEX_URL = process.env.INDEX_URL || `${REPO_URL}/raw/main/index.json`
+// 索引发布地址：raw.githubusercontent.com（DSH 可直接读取；图标相对 URL 会基于此解析）。
+// 如改用 GitHub Pages，设置环境变量 INDEX_URL 覆盖即可。
+const INDEX_URL = process.env.INDEX_URL || 'https://raw.githubusercontent.com/hanwu-git/dsh-plugins/main/index.json'
 
 const MARKET_TITLE = { zh: '老韩的 DSH 插件', en: "Hanwu's DSH plugins" }
 const MARKET_DESC = {
