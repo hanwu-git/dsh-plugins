@@ -13,7 +13,15 @@
   "engines": {
     "node": ">=22"
   },
-  "keywords": ["dsh-plugin", "deepseek-harness", "monorepo", "plugin-market"],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "monorepo",
+    "plugin-market"
+  ],
   "author": "hanwu-git",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@deepseek-ai/dsh-plugin-market-index": "^0.2.1-alpha.4"
+  }
 }

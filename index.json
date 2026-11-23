@@ -1,0 +1,188 @@
+{
+  "format": 1,
+  "title": {
+    "zh": "老韩的 DSH 插件",
+    "en": "Hanwu's DSH plugins"
+  },
+  "description": {
+    "zh": "老韩自研的 DeepSeek Harness 插件集，统一通过插件市场安装与更新。",
+    "en": "Self-built DeepSeek Harness plugins by Hanwu, installed and updated via the plugin market."
+  },
+  "plugins": [
+    {
+      "name": "dsh-loomy-connect",
+      "title": {
+        "en": "Loomy Connect",
+        "zh": "Loomy 模型接入"
+      },
+      "description": {
+        "en": "Use the models included with the Loomy desktop app in DSH with no configuration. Shows a composer credit pill and a model-rate popover, with a settings card for credits and the model list.",
+        "zh": "把 Loomy 桌面 App 包含的模型直接接入 DSH，开箱即用。输入框显示 Loomy 积分胶囊与模型倍率弹层，设置卡片可查看积分与模型清单。"
+      },
+      "icon": "icons/loomy-connect.svg",
+      "author": "hanwu-git",
+      "repository": {
+        "url": "https://github.com/hanwu-git/dsh-plugins",
+        "directory": "packages/loomy-connect"
+      },
+      "dist-tags": {
+        "latest": "0.2.0"
+      },
+      "versions": [
+        {
+          "version": "0.2.0",
+          "publishTimestamp": 1795405123,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/hanwu-git/dsh-plugins",
+            "commit": "d4f08d6b5b2cb83465f69cd97a2790657ba7d265",
+            "path": "packages/loomy-connect"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-0 <0.3.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "@local/unified-model-center",
+      "title": {
+        "en": "Unified Model Center",
+        "zh": "统一模型中心"
+      },
+      "description": {
+        "en": "One wide popup for all connected platforms: horizontal provider tabs, frequency-pinned favorites, cross-provider search, and one-click session model switching. Independent of connector plugins, so connector upgrades cannot change its UI.",
+        "zh": "一个宽弹窗集中所有已连接平台的模型：横排标签切换、按使用频率置顶常用、跨连接搜索、点击即切换会话模型。独立于各连接器插件，连接器升级不影响界面。"
+      },
+      "icon": "icons/unified-model-center.svg",
+      "author": "hanwu-git",
+      "repository": {
+        "url": "https://github.com/hanwu-git/dsh-plugins",
+        "directory": "packages/unified-model-center"
+      },
+      "dist-tags": {
+        "latest": "1.0.0"
+      },
+      "versions": [
+        {
+          "version": "1.0.0",
+          "publishTimestamp": 1795405123,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/hanwu-git/dsh-plugins",
+            "commit": "d4f08d6b5b2cb83465f69cd97a2790657ba7d265",
+            "path": "packages/unified-model-center"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-0 <0.3.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "dsh-memory-nodes",
+      "title": {
+        "en": "Memory nodes",
+        "zh": "记忆节点"
+      },
+      "description": {
+        "en": "Platform and project level long-term memory. Injects two compiled memory nodes into every session, gives the model memory write/read tools, and re-compiles raw notes into structured memory on demand from the plugin details page.",
+        "zh": "平台级与项目级长期记忆。向每个会话注入两个编译后的记忆节点，提供模型记忆读写工具，并可在插件详情页一键将原始记录二次编译为结构化记忆。"
+      },
+      "icon": "icons/memory-nodes.svg",
+      "author": "hanwu-git",
+      "repository": {
+        "url": "https://github.com/hanwu-git/dsh-plugins",
+        "directory": "packages/memory-nodes"
+      },
+      "dist-tags": {
+        "latest": "1.0.0"
+      },
+      "versions": [
+        {
+          "version": "1.0.0",
+          "publishTimestamp": 1795405123,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/hanwu-git/dsh-plugins",
+            "commit": "d4f08d6b5b2cb83465f69cd97a2790657ba7d265",
+            "path": "packages/memory-nodes"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-0 <0.3.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "@local/prompt-polish",
+      "title": {
+        "en": "Prompt polish",
+        "zh": "提示词润色"
+      },
+      "description": {
+        "en": "Adds a button under the composer that rewrites the prompt currently in it. Click once to fix grammar, ambiguity, and structure while keeping your intent and length; double-click to rewrite the rough text into a structured prompt with an explicit goal, context, requirements, and expected output. The result replaces the draft in place, and an Undo appears for a few seconds so a bad rewrite costs one click. Polishing uses the model you have selected in the session, and each click is one model request. Nothing is saved: the Host appends no session event and stores no draft. Turning the plugin off removes the button.",
+        "zh": "在输入框下方加一个按钮，点击后重写输入框里正在写的提示词。单击轻修：修正语病、歧义与结构，保留你的原意和大体长度；双击重写：把口语化的描述改写成结构化提示词，明确目标、背景、要求与期望输出。结果直接替换输入框内容，并出现「撤销」按钮保留几秒，改坏了点一下就还原。润色使用你在会话里选中的那个模型，每点一次就是一次模型请求。不保存任何东西：Host 不写会话事件，也不存草稿。关闭本插件即移除该按钮。"
+      },
+      "icon": "icons/prompt-polish.svg",
+      "author": "hanwu-git",
+      "repository": {
+        "url": "https://github.com/hanwu-git/dsh-plugins",
+        "directory": "packages/prompt-polish"
+      },
+      "dist-tags": {
+        "latest": "0.3.0"
+      },
+      "versions": [
+        {
+          "version": "0.3.0",
+          "publishTimestamp": 1795405123,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/hanwu-git/dsh-plugins",
+            "commit": "d4f08d6b5b2cb83465f69cd97a2790657ba7d265",
+            "path": "packages/prompt-polish"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-0 <0.3.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "@local/credit-hud",
+      "title": {
+        "en": "Credit HUD",
+        "zh": "积分浮窗"
+      },
+      "description": {
+        "en": "A sidebar-footer entry that opens a floating panel listing the current credit balance of every connected platform: Trae (CN), WorkBuddy, Qoder (CN), Qoder (Global) and Loomy; Doubao Work has no readable balance route yet and shows a placeholder row. Every number is read from the owning plugin's own read-only route; nothing is written.",
+        "zh": "左下角一个「积分」入口，点开浮窗汇总各已接入平台的当前积分余额：Trae 国内、WorkBuddy、Qoder 国内、Qoder 国际、Loomy；豆包工作暂无可读余额接口，占位显示。数据全部来自各插件自身的只读路由，不写任何配置。"
+      },
+      "icon": "icons/credit-hud.svg",
+      "author": "hanwu-git",
+      "repository": {
+        "url": "https://github.com/hanwu-git/dsh-plugins",
+        "directory": "packages/credit-hud"
+      },
+      "dist-tags": {
+        "latest": "0.1.0"
+      },
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1795405123,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/hanwu-git/dsh-plugins",
+            "commit": "d4f08d6b5b2cb83465f69cd97a2790657ba7d265",
+            "path": "packages/credit-hud"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-0 <0.3.0"
+          }
+        }
+      ]
+    }
+  ]
+}

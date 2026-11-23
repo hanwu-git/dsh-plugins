@@ -161,4 +161,15 @@ if (CHECK_ONLY) {
   process.exit(0)
 }
 writeFileSync(OUT, JSON.stringify(idx, null, 2) + '\n', 'utf8')
-console.log(`wrote ${OUT}: ${idx.plugins.length} plugins, commit ${idx.plugins[0].versions[0].commit}`)
+console.log(`wrote ${OUT}: ${idx.plugins.length} plugins, commit ${idx.plugins[0].versions[0].source.commit}`)
+
+// 二次校验：用 DSH 官方校验器验证生成的索引（devDependency）。
+// 官方校验通过才允许发布；失败则退出非零，避免发布无效索引。
+try {
+  const { parseMarketIndex } = await import('@deepseek-ai/dsh-plugin-market-index')
+  parseMarketIndex(idx, INDEX_URL)
+  console.log('official validator: OK')
+} catch (err) {
+  console.error('official validator FAILED:', err?.path || '', err?.message || err)
+  process.exit(1)
+}
