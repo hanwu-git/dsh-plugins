@@ -57,8 +57,10 @@ export const CSS = {
   listNote: 'dlc_listNote',
   listMeta: 'dlc_listMeta',
   pill: 'dlc_pill',
+  tag: 'dlc_tag',
   refreshInner: 'dlc_refreshInner',
   refreshSpin: 'dlc_refreshSpin',
+  refreshButton: 'dlc_refreshButton',
   tabs: 'dlc_tabs',
   tab: 'dlc_tab',
   tabActive: 'dlc_tabActive',
@@ -127,6 +129,16 @@ const STYLESHEET = `
    they share one chip. Tabular figures stop the digits from drifting. */
 .dlc_pill{padding:1px 8px;border-radius:999px;font-size:11px;line-height:18px;white-space:nowrap;font-variant-numeric:tabular-nums;background:var(--dsw-alias-state-success-subtle,rgba(34,160,107,.12));color:var(--dsw-alias-state-success-primary,#22a06b)}
 .dlc_refreshInner{display:inline-flex;align-items:center;gap:6px}
+/* Local stand-in for the official outline button: same tokens, no primitive import. */
+.dlc_refreshButton{display:inline-flex;align-items:center;font:inherit;font-size:12px;line-height:1.5;cursor:pointer;
+  color:var(--dsw-alias-label-primary);background:transparent;border:.5px solid var(--dsw-alias-border-l3);border-radius:8px;
+  padding:4px 10px;transition:background .15s,border-color .15s}
+.dlc_refreshButton:hover:not(:disabled){background:var(--dsw-alias-bg-layer-3);border-color:var(--dsw-alias-label-dimmed)}
+.dlc_refreshButton:disabled{opacity:.6;cursor:default}
+.dlc_refreshButton:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
+.dlc_tag{display:inline-flex;align-items:center;font-size:11px;line-height:18px;padding:0 8px;border-radius:999px;
+  color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-3);
+  border:.5px solid var(--dsw-alias-border-l3);white-space:nowrap;font-variant-numeric:tabular-nums}
 .dlc_refreshSpin{animation:dlc_spin .7s linear infinite}
 @keyframes dlc_spin{to{transform:rotate(360deg)}}
 /* Two-tab switch (账户 / 模型). Plain buttons styled to the shell tokens — the

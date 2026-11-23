@@ -27,7 +27,6 @@ window.__ModuleLoader__.load({
 		}) : target, mod));
 		//#endregion
 		let react = require("react");
-		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
 		react_dom = __toESM(react_dom, 1);
@@ -101,8 +100,10 @@ window.__ModuleLoader__.load({
 			listNote: "dlc_listNote",
 			listMeta: "dlc_listMeta",
 			pill: "dlc_pill",
+			tag: "dlc_tag",
 			refreshInner: "dlc_refreshInner",
 			refreshSpin: "dlc_refreshSpin",
+			refreshButton: "dlc_refreshButton",
 			tabs: "dlc_tabs",
 			tab: "dlc_tab",
 			tabActive: "dlc_tabActive",
@@ -170,6 +171,16 @@ window.__ModuleLoader__.load({
    they share one chip. Tabular figures stop the digits from drifting. */
 .dlc_pill{padding:1px 8px;border-radius:999px;font-size:11px;line-height:18px;white-space:nowrap;font-variant-numeric:tabular-nums;background:var(--dsw-alias-state-success-subtle,rgba(34,160,107,.12));color:var(--dsw-alias-state-success-primary,#22a06b)}
 .dlc_refreshInner{display:inline-flex;align-items:center;gap:6px}
+/* Local stand-in for the official outline button: same tokens, no primitive import. */
+.dlc_refreshButton{display:inline-flex;align-items:center;font:inherit;font-size:12px;line-height:1.5;cursor:pointer;
+  color:var(--dsw-alias-label-primary);background:transparent;border:.5px solid var(--dsw-alias-border-l3);border-radius:8px;
+  padding:4px 10px;transition:background .15s,border-color .15s}
+.dlc_refreshButton:hover:not(:disabled){background:var(--dsw-alias-bg-layer-3);border-color:var(--dsw-alias-label-dimmed)}
+.dlc_refreshButton:disabled{opacity:.6;cursor:default}
+.dlc_refreshButton:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
+.dlc_tag{display:inline-flex;align-items:center;font-size:11px;line-height:18px;padding:0 8px;border-radius:999px;
+  color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-3);
+  border:.5px solid var(--dsw-alias-border-l3);white-space:nowrap;font-variant-numeric:tabular-nums}
 .dlc_refreshSpin{animation:dlc_spin .7s linear infinite}
 @keyframes dlc_spin{to{transform:rotate(360deg)}}
 /* Two-tab switch (账户 / 模型). Plain buttons styled to the shell tokens — the
@@ -307,7 +318,60 @@ window.__ModuleLoader__.load({
 		function withModifier(base, modifier, on) {
 			return on ? `${base} ${modifier}` : base;
 		}
-		/** Map our transport outcome onto the primitive's state vocabulary. */
+		function StateDot({ state }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				"aria-hidden": "true",
+				style: {
+					display: "inline-block",
+					width: 8,
+					height: 8,
+					borderRadius: "50%",
+					background: state === "done" ? "var(--dsw-alias-state-success-primary, #22a06b)" : state === "error" ? "var(--dsw-alias-state-error-primary, #d9534f)" : "var(--dsw-alias-label-tertiary, #8a8a99)",
+					flex: "none"
+				}
+			});
+		}
+		function Tag({ children }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				className: CSS$1.tag,
+				children
+			});
+		}
+		function Chevron({ open }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
+				width: 14,
+				height: 14,
+				viewBox: "0 0 16 16",
+				fill: "none",
+				"aria-hidden": "true",
+				className: withModifier(CSS$1.chevron, CSS$1.chevronOpen, open),
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+					d: "M4 6l4 4 4-4",
+					stroke: "currentColor",
+					strokeWidth: 1.6,
+					strokeLinecap: "round",
+					strokeLinejoin: "round"
+				})
+			});
+		}
+		function RefreshIcon({ spinning }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
+				width: 14,
+				height: 14,
+				viewBox: "0 0 16 16",
+				fill: "none",
+				"aria-hidden": "true",
+				className: spinning ? CSS$1.refreshSpin : void 0,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+					d: "M13 8a5 5 0 1 1-1.5-3.5M13 2.5V5h-2.5",
+					stroke: "currentColor",
+					strokeWidth: 1.5,
+					strokeLinecap: "round",
+					strokeLinejoin: "round"
+				})
+			});
+		}
+		/** Map our transport outcome onto the dot vocabulary. */
 		function dotState(status) {
 			switch (status) {
 				case "signed-in": return "done";
@@ -502,15 +566,15 @@ window.__ModuleLoader__.load({
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: CSS$1.status,
 								role: "status",
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dotState(status.status) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: label })]
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "outline",
-								size: "sm",
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StateDot, { state: dotState(status.status) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: label })]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								type: "button",
+								className: CSS$1.refreshButton,
 								disabled: busy,
 								onClick: () => void manualRefresh(),
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 									className: CSS$1.refreshInner,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRefreshOutline14, { className: busy ? CSS$1.refreshSpin : void 0 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: busy ? t("refreshing") : t("refresh") })]
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefreshIcon, { spinning: busy }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: busy ? t("refreshing") : t("refresh") })]
 								})
 							})]
 						})
@@ -612,10 +676,7 @@ window.__ModuleLoader__.load({
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 								className: CSS$1.heading,
 								children: t("modelsHeading")
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-								tone: "neutral",
-								children: t("modelsTag", { count: status.modelCount })
-							})]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tag, { children: t("modelsTag", { count: status.modelCount }) })]
 						}), models === void 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: CSS$1.table,
 							role: "grid",
@@ -676,7 +737,7 @@ window.__ModuleLoader__.load({
 							className: CSS$1.description,
 							children: t("intro")
 						})]
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronDownOutline14, { className: withModifier(CSS$1.chevron, CSS$1.chevronOpen, open) })]
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Chevron, { open })]
 				}), open ? body : null]
 			});
 		}

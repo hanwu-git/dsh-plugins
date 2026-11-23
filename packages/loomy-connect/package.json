@@ -61,9 +61,6 @@
         "@deepseek-ai/dsh-client-ui-settings-plugins",
         "@deepseek-ai/dsh-client-locale"
       ],
-      "external": [
-        "@deepseek-ai/dsh-client-ui-primitives"
-      ],
       "platform": "web"
     }
   },
