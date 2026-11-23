@@ -1317,11 +1317,7 @@ window.__ModuleLoader__.load({
 		* named in the package's `dsh.client.inject` list, so cordis has activated
 		* them before this plugin's fiber starts.
 		*/
-		const inject = [
-			"slots",
-			"locale",
-			"configForms"
-		];
+		const inject = ["slots", "locale"];
 		/**
 		* Register card copy and the Loomy card under Plugin configuration.
 		*
@@ -1341,7 +1337,7 @@ window.__ModuleLoader__.load({
 				let activeAccount = () => void 0;
 				let setActiveAccount = () => void 0;
 				try {
-					const configForms = ctx.configForms;
+					const configForms = ctx.get("configForms");
 					if (configForms === void 0) throw new Error("configForms service not present");
 					const form = configForms.get("loomy");
 					const read = () => {

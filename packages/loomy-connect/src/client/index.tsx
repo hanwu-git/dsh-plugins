@@ -30,7 +30,11 @@ export const name = 'dsh-loomy-connect-client'
  * named in the package's `dsh.client.inject` list, so cordis has activated
  * them before this plugin's fiber starts.
  */
-export const inject = ['slots', 'locale', 'configForms']
+// `configForms` is deliberately NOT a hard inject dependency: if the host does
+// not expose that service, a hard dependency would abort this plugin's fiber
+// before apply() runs and the whole settings card would disappear. We fetch it
+// optionally via ctx.get() below and fall back gracefully.
+export const inject = ['slots', 'locale']
 
 /**
  * Register card copy and the Loomy card under Plugin configuration.
@@ -60,7 +64,9 @@ export function apply(ctx: ClientContext): void {
         subscribe(listener: () => void): () => void
         mutate(ops: { op: string; path: string[]; value: unknown }[]): void
       }
-      const configForms = (ctx as unknown as { configForms?: { get(ns: string): ConfigForm } }).configForms
+      // Soft lookup: a hard `inject` dependency on a missing service would keep
+      // apply() from running at all and take the card down with it.
+      const configForms = (ctx as unknown as { get(name: string): unknown }).get('configForms') as { get(ns: string): ConfigForm } | undefined
       if (configForms === undefined) throw new Error('configForms service not present')
       const form = configForms.get('loomy')
       const read = () => {
