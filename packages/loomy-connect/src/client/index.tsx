@@ -89,6 +89,58 @@ export function apply(ctx: ClientContext): void {
       inject: (): LoomyPluginCardInjected => ({ t, activeAccount, setActiveAccount }),
     }, LoomyPluginCard))
 
+    // Standalone Settings page (the left nav row), matching the connector
+    // plugins' layout. `settings.section` drives the nav row; the shell renders
+    // `settings.section.icon` with `{ only: row.id }`, so the glyph's cell is
+    // only meaningful while the page's id exists — hence one injection that
+    // registers both. `surface: 'settings'` tells the component the shell owns
+    // the panel chrome, so it drops its own fold header.
+    try {
+      ctx.slots.inject('settings.section', () => {
+        const disposers: (() => void)[] = []
+        disposers.push(ctx.slots.register({
+          name: 'settings.section',
+          id: 'loomy',
+          order: 36,
+          label: () => t('navPanel'),
+          locale: namespace,
+          inject: (): LoomyPluginCardInjected => ({ t, activeAccount, setActiveAccount, surface: 'settings' }),
+        }, LoomyPluginCard))
+        try {
+          const iconDisposer = ctx.slots.inject('settings.section.icon', () => ctx.slots.register({
+            name: 'settings.section.icon',
+            key: 'loomy',
+            locale: namespace,
+          }, ({ size, active }: { size?: number; active?: boolean }) => {
+            const edge = typeof size === 'number' ? size : 16
+            return (
+              <svg
+                width={edge} height={edge} viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"
+                aria-hidden="true"
+                style={{ display: 'block', opacity: active === false ? 0.75 : 1 }}
+              >
+                <circle cx="12" cy="12" r="8.5" />
+                <circle cx="9.5" cy="11" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="14.5" cy="11" r="1.2" fill="currentColor" stroke="none" />
+                <path d="M9 15c1.6 1.1 4.4 1.1 6 0" />
+              </svg>
+            )
+          }))
+          if (typeof iconDisposer === 'function') disposers.push(iconDisposer)
+        } catch (error: unknown) {
+          console.error('[dsh-loomy-connect] settings nav icon failed to register (page unaffected):', error)
+        }
+        return () => {
+          for (const dispose of disposers) {
+            try { dispose() } catch { /* already disposed */ }
+          }
+        }
+      })
+    } catch (error: unknown) {
+      console.error('[dsh-loomy-connect] settings section failed to register (host provider unaffected):', error)
+    }
+
     // Composer status pill — the Loomy counterpart of the Doubao rate control.
     // `conversation.input.right` is a list slot, so this cell coexists with the
     // Doubao plugin's; each renders only while its own provider is the active

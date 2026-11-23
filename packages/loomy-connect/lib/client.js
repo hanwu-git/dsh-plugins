@@ -72,6 +72,8 @@ window.__ModuleLoader__.load({
 			chevron: "dlc_chevron",
 			chevronOpen: "dlc_chevronOpen",
 			body: "dlc_body",
+			page: "dlc_page",
+			pageBody: "dlc_pageBody",
 			section: "dlc_section",
 			heading: "dlc_heading",
 			row: "dlc_row",
@@ -123,6 +125,10 @@ window.__ModuleLoader__.load({
 .dlc_chevron{color:var(--dsw-alias-label-tertiary);flex:none;transition:transform .16s}
 .dlc_chevronOpen{transform:rotate(180deg)}
 .dlc_body{border-top:.5px solid var(--dsw-alias-border-l2);margin:0 16px;padding-bottom:8px}
+/* Standalone Settings page: the shell owns the panel chrome, so this container
+   carries no card border, radius, or fold affordances. */
+.dlc_page{display:flex;flex-direction:column;gap:2px;padding:4px 0 16px}
+.dlc_pageBody{display:flex;flex-direction:column}
 .dlc_section{flex-direction:column;gap:6px;padding:12px 0;display:flex}
 .dlc_section+.dlc_section{border-top:.5px solid var(--dsw-alias-border-l2)}
 .dlc_heading{color:var(--dsw-alias-label-primary);margin:0;font-size:13px;font-weight:500;line-height:1.5}
@@ -413,9 +419,11 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/** Render Loomy sign-in state and points as one expandable card. */
-		function LoomyPluginCard({ t, activeAccount, setActiveAccount }) {
+		function LoomyPluginCard({ t, activeAccount, setActiveAccount, surface }) {
 			if (t === void 0) throw new Error("Loomy plugin card requires its translation function");
-			const [open, setOpen] = (0, react.useState)(false);
+			const isPage = surface === "settings";
+			const [openState, setOpenState] = (0, react.useState)(false);
+			const open = isPage || openState;
 			const [status, setStatus] = (0, react.useState)({ status: "signed-out" });
 			const [busy, setBusy] = (0, react.useState)(false);
 			/** Which of the two tabs (积分 / 模型) is showing. */
@@ -484,6 +492,171 @@ window.__ModuleLoader__.load({
 			const updatedMs = rawUpdatedAt === void 0 ? void 0 : Date.parse(rawUpdatedAt);
 			const dailyExpiryHint = dailyExpiryText(dailyPointsExpiry(rawUpdatedAt), t);
 			const models = status.status === "signed-in" ? status.models : void 0;
+			const body = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: isPage ? CSS$1.pageBody : CSS$1.body,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: CSS$1.section,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: CSS$1.row,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: CSS$1.status,
+								role: "status",
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dotState(status.status) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: label })]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "outline",
+								size: "sm",
+								disabled: busy,
+								onClick: () => void manualRefresh(),
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									className: CSS$1.refreshInner,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRefreshOutline14, { className: busy ? CSS$1.refreshSpin : void 0 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: busy ? t("refreshing") : t("refresh") })]
+								})
+							})]
+						})
+					}),
+					status.status === "signed-in" && (status.accounts?.length ?? 0) > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: CSS$1.section,
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: CSS$1.accountRow,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+								className: CSS$1.accountLabel,
+								htmlFor: "dlc-active-account",
+								children: t("activeAccountLabel")
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
+								id: "dlc-active-account",
+								className: CSS$1.accountSelect,
+								value: activeAccount?.() ?? status.activeUserId ?? status.accounts?.[0]?.userId ?? "",
+								onChange: (event) => {
+									const userId = event.target.value;
+									setActiveAccount?.(userId);
+									window.setTimeout(() => {
+										refresh(void 0, true);
+									}, 50);
+								},
+								children: status.accounts?.map((account) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
+									value: account.userId,
+									children: account.maskedPhone ?? account.userId
+								}, account.userId))
+							})]
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							className: CSS$1.hint,
+							children: t("activeAccountHint")
+						})]
+					}) : null,
+					status.status === "signed-in" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: CSS$1.tabs,
+						role: "tablist",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							type: "button",
+							role: "tab",
+							"aria-selected": tab === "account",
+							className: withModifier(CSS$1.tab, CSS$1.tabActive, tab === "account"),
+							onClick: () => setTab("account"),
+							children: t("tabPoints")
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							type: "button",
+							role: "tab",
+							"aria-selected": tab === "models",
+							className: withModifier(CSS$1.tab, CSS$1.tabActive, tab === "models"),
+							onClick: () => setTab("models"),
+							children: t("tabModels")
+						})]
+					}), tab === "account" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: CSS$1.section,
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+								className: CSS$1.heading,
+								children: t("pointsHeading")
+							}),
+							status.points === void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+								className: CSS$1.text,
+								children: t("pointsUnavailable")
+							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PointsTotal, {
+									label: t("pointsTotal"),
+									value: status.points.permanent + status.points.daily,
+									hint: t("pointsTotalHint")
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: CSS$1.tiles,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PointsTile, {
+										label: t("permanentPoints"),
+										value: status.points.permanent,
+										hint: t("permanentPointsHint")
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PointsTile, {
+										label: t("dailyPoints"),
+										value: status.points.daily,
+										hint: dailyExpiryHint ?? t("dailyPointsHint"),
+										accent: dailyExpiryHint !== void 0
+									})]
+								}),
+								updatedMs === void 0 || Number.isNaN(updatedMs) ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+									className: CSS$1.hint,
+									children: t("updatedAt", { time: formatTime(updatedMs) })
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+									className: CSS$1.hint,
+									children: t("pointsSourceHint")
+								})
+							] }),
+							status.pointsError === void 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+								className: CSS$1.error,
+								children: t("pointsError", { message: status.pointsError })
+							})
+						]
+					}) }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: CSS$1.section,
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: CSS$1.row,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+								className: CSS$1.heading,
+								children: t("modelsHeading")
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+								tone: "neutral",
+								children: t("modelsTag", { count: status.modelCount })
+							})]
+						}), models === void 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: CSS$1.table,
+							role: "grid",
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: CSS$1.tableHeader,
+									role: "row",
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											role: "columnheader",
+											children: t("modelsColModel")
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											role: "columnheader",
+											children: t("modelsColContext")
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											role: "columnheader",
+											children: t("modelsColBill")
+										})
+									]
+								}),
+								models.filter((model) => model.image !== true).map((model) => renderModelRow(model, t)),
+								models.filter((model) => model.image === true).map((model) => renderModelRow(model, t))
+							]
+						}) })]
+					})] }) : null,
+					status.status === "signed-out" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: CSS$1.text,
+						children: t("signedOutHint")
+					}) : null,
+					status.status === "error" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: CSS$1.error,
+						children: status.message
+					}) : null
+				]
+			});
+			if (isPage) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				className: CSS$1.page,
+				children: body
+			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 				className: withModifier(CSS$1.card, CSS$1.cardOpen, open),
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
@@ -492,7 +665,7 @@ window.__ModuleLoader__.load({
 					"aria-expanded": open,
 					"aria-label": `${t(open ? "collapse" : "expand")}: ${title}`,
 					onClick: () => {
-						setOpen(!open);
+						setOpenState(!openState);
 					},
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 						className: CSS$1.headText,
@@ -504,167 +677,7 @@ window.__ModuleLoader__.load({
 							children: t("intro")
 						})]
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronDownOutline14, { className: withModifier(CSS$1.chevron, CSS$1.chevronOpen, open) })]
-				}), open ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: CSS$1.body,
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: CSS$1.section,
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: CSS$1.row,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: CSS$1.status,
-									role: "status",
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dotState(status.status) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: label })]
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "outline",
-									size: "sm",
-									disabled: busy,
-									onClick: () => void manualRefresh(),
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-										className: CSS$1.refreshInner,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRefreshOutline14, { className: busy ? CSS$1.refreshSpin : void 0 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: busy ? t("refreshing") : t("refresh") })]
-									})
-								})]
-							})
-						}),
-						status.status === "signed-in" && (status.accounts?.length ?? 0) > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: CSS$1.section,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: CSS$1.accountRow,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
-									className: CSS$1.accountLabel,
-									htmlFor: "dlc-active-account",
-									children: t("activeAccountLabel")
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
-									id: "dlc-active-account",
-									className: CSS$1.accountSelect,
-									value: activeAccount?.() ?? status.activeUserId ?? status.accounts?.[0]?.userId ?? "",
-									onChange: (event) => {
-										const userId = event.target.value;
-										setActiveAccount?.(userId);
-										window.setTimeout(() => {
-											refresh(void 0, true);
-										}, 50);
-									},
-									children: status.accounts?.map((account) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
-										value: account.userId,
-										children: account.maskedPhone ?? account.userId
-									}, account.userId))
-								})]
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-								className: CSS$1.hint,
-								children: t("activeAccountHint")
-							})]
-						}) : null,
-						status.status === "signed-in" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: CSS$1.tabs,
-							role: "tablist",
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-								type: "button",
-								role: "tab",
-								"aria-selected": tab === "account",
-								className: withModifier(CSS$1.tab, CSS$1.tabActive, tab === "account"),
-								onClick: () => setTab("account"),
-								children: t("tabPoints")
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-								type: "button",
-								role: "tab",
-								"aria-selected": tab === "models",
-								className: withModifier(CSS$1.tab, CSS$1.tabActive, tab === "models"),
-								onClick: () => setTab("models"),
-								children: t("tabModels")
-							})]
-						}), tab === "account" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: CSS$1.section,
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-									className: CSS$1.heading,
-									children: t("pointsHeading")
-								}),
-								status.points === void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: CSS$1.text,
-									children: t("pointsUnavailable")
-								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PointsTotal, {
-										label: t("pointsTotal"),
-										value: status.points.permanent + status.points.daily,
-										hint: t("pointsTotalHint")
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: CSS$1.tiles,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PointsTile, {
-											label: t("permanentPoints"),
-											value: status.points.permanent,
-											hint: t("permanentPointsHint")
-										}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PointsTile, {
-											label: t("dailyPoints"),
-											value: status.points.daily,
-											hint: dailyExpiryHint ?? t("dailyPointsHint"),
-											accent: dailyExpiryHint !== void 0
-										})]
-									}),
-									updatedMs === void 0 || Number.isNaN(updatedMs) ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-										className: CSS$1.hint,
-										children: t("updatedAt", { time: formatTime(updatedMs) })
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-										className: CSS$1.hint,
-										children: t("pointsSourceHint")
-									})
-								] }),
-								status.pointsError === void 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									className: CSS$1.error,
-									children: t("pointsError", { message: status.pointsError })
-								})
-							]
-						}) }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: CSS$1.section,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: CSS$1.row,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-									className: CSS$1.heading,
-									children: t("modelsHeading")
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-									tone: "neutral",
-									children: t("modelsTag", { count: status.modelCount })
-								})]
-							}), models === void 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: CSS$1.table,
-								role: "grid",
-								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: CSS$1.tableHeader,
-										role: "row",
-										children: [
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												role: "columnheader",
-												children: t("modelsColModel")
-											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												role: "columnheader",
-												children: t("modelsColContext")
-											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												role: "columnheader",
-												children: t("modelsColBill")
-											})
-										]
-									}),
-									models.filter((model) => model.image !== true).map((model) => renderModelRow(model, t)),
-									models.filter((model) => model.image === true).map((model) => renderModelRow(model, t))
-								]
-							}) })]
-						})] }) : null,
-						status.status === "signed-out" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: CSS$1.text,
-							children: t("signedOutHint")
-						}) : null,
-						status.status === "error" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: CSS$1.error,
-							children: status.message
-						}) : null
-					]
-				}) : null]
+				}), open ? body : null]
 			});
 		}
 		//#endregion
@@ -1247,6 +1260,7 @@ window.__ModuleLoader__.load({
 			requestFailed: "Request failed",
 			activeAccountLabel: "Chat account",
 			activeAccountHint: "Chat requests run as the selected account. Points still show Loomy’s currently displayed balance.",
+			navPanel: "Loomy",
 			pillLabel: "Loomy · Points {total}",
 			controlAria: "View Loomy points and model rates",
 			popoverTitle: "Loomy points & rates",
@@ -1296,6 +1310,7 @@ window.__ModuleLoader__.load({
 			requestFailed: "请求失败",
 			activeAccountLabel: "聊天账号",
 			activeAccountHint: "聊天请求使用所选账号；积分仍显示 Loomy 客户端当前展示的余额。",
+			navPanel: "Loomy",
 			pillLabel: "Loomy · 剩余积分 {total}",
 			controlAria: "查看 Loomy 积分与模型倍率",
 			popoverTitle: "Loomy 积分与倍率",
@@ -1366,6 +1381,79 @@ window.__ModuleLoader__.load({
 						setActiveAccount
 					})
 				}, LoomyPluginCard));
+				try {
+					ctx.slots.inject("settings.section", () => {
+						const disposers = [];
+						disposers.push(ctx.slots.register({
+							name: "settings.section",
+							id: "loomy",
+							order: 36,
+							label: () => t("navPanel"),
+							locale: namespace,
+							inject: () => ({
+								t,
+								activeAccount,
+								setActiveAccount,
+								surface: "settings"
+							})
+						}, LoomyPluginCard));
+						try {
+							const iconDisposer = ctx.slots.inject("settings.section.icon", () => ctx.slots.register({
+								name: "settings.section.icon",
+								key: "loomy",
+								locale: namespace
+							}, ({ size, active }) => {
+								const edge = typeof size === "number" ? size : 16;
+								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+									width: edge,
+									height: edge,
+									viewBox: "0 0 24 24",
+									fill: "none",
+									stroke: "currentColor",
+									strokeWidth: 1.8,
+									strokeLinecap: "round",
+									"aria-hidden": "true",
+									style: {
+										display: "block",
+										opacity: active === false ? .75 : 1
+									},
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+											cx: "12",
+											cy: "12",
+											r: "8.5"
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+											cx: "9.5",
+											cy: "11",
+											r: "1.2",
+											fill: "currentColor",
+											stroke: "none"
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+											cx: "14.5",
+											cy: "11",
+											r: "1.2",
+											fill: "currentColor",
+											stroke: "none"
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 15c1.6 1.1 4.4 1.1 6 0" })
+									]
+								});
+							}));
+							if (typeof iconDisposer === "function") disposers.push(iconDisposer);
+						} catch (error) {
+							console.error("[dsh-loomy-connect] settings nav icon failed to register (page unaffected):", error);
+						}
+						return () => {
+							for (const dispose of disposers) try {
+								dispose();
+							} catch {}
+						};
+					});
+				} catch (error) {
+					console.error("[dsh-loomy-connect] settings section failed to register (host provider unaffected):", error);
+				}
 				try {
 					ctx.slots.inject("conversation.input.right", () => ctx.slots.register({
 						name: "conversation.input.right",

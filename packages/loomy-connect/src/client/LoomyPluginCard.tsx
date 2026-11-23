@@ -35,6 +35,12 @@ export interface LoomyPluginCardInjected {
   activeAccount?: () => string | undefined
   /** Persist the chosen account into this plugin's config section. */
   setActiveAccount?: (userId: string) => void
+  /**
+   * Where this component is mounted. `card` is the foldable Plugin-configuration
+   * card; `settings` is the standalone Settings page the shell owns, which
+   * supplies its own chrome, so the collapsible header is dropped there.
+   */
+  surface?: 'card' | 'settings'
 }
 
 /** Props delivered by the Plugin configuration item slot. */
@@ -131,9 +137,13 @@ function PointsTotal({ label, value, hint }: { label: string; value: number; hin
 }
 
 /** Render Loomy sign-in state and points as one expandable card. */
-export function LoomyPluginCard({ t, activeAccount, setActiveAccount }: LoomyPluginCardProps): ReactElement {
+export function LoomyPluginCard({ t, activeAccount, setActiveAccount, surface }: LoomyPluginCardProps): ReactElement {
   if (t === undefined) throw new Error('Loomy plugin card requires its translation function')
-  const [open, setOpen] = useState(false)
+  const isPage = surface === 'settings'
+  // On the standalone Settings page the shell owns the panel chrome, so the
+  // body is always shown and the collapsible header is omitted entirely.
+  const [openState, setOpenState] = useState(false)
+  const open = isPage || openState
   const [status, setStatus] = useState<LoomyWebStatus>({ status: 'signed-out' })
   const [busy, setBusy] = useState(false)
   /** Which of the two tabs (积分 / 模型) is showing. */
@@ -213,26 +223,8 @@ export function LoomyPluginCard({ t, activeAccount, setActiveAccount }: LoomyPlu
   const models = status.status === 'signed-in' ? status.models : undefined
   // The list also carries image generators the provider never serves, so the
   // count in the tag and the row count differ unless both are explained.
-  return (
-    <li className={withModifier(CSS.card, CSS.cardOpen, open)}>
-      <button
-        type="button"
-        className={CSS.header}
-        aria-expanded={open}
-        aria-label={`${t(open ? 'collapse' : 'expand')}: ${title}`}
-        onClick={() => {
-          setOpen(!open)
-        }}
-      >
-        <span className={CSS.headText}>
-          <span className={CSS.name}>{title}</span>
-          <span className={CSS.description}>{t('intro')}</span>
-        </span>
-        <IconChevronDownOutline14 className={withModifier(CSS.chevron, CSS.chevronOpen, open)} />
-      </button>
-      {open
-        ? (
-          <div className={CSS.body}>
+  const body = (
+    <div className={isPage ? CSS.pageBody : CSS.body}>
             <div className={CSS.section}>
               <div className={CSS.row}>
                 <div className={CSS.status} role="status">
@@ -371,9 +363,31 @@ export function LoomyPluginCard({ t, activeAccount, setActiveAccount }: LoomyPlu
               : null}
             {status.status === 'signed-out' ? <p className={CSS.text}>{t('signedOutHint')}</p> : null}
             {status.status === 'error' ? <p className={CSS.error}>{status.message}</p> : null}
-          </div>
-        )
-        : null}
+    </div>
+  )
+
+  // The standalone Settings page supplies its own title and close affordances,
+  // so it renders the body alone inside a plain container.
+  if (isPage) return <div className={CSS.page}>{body}</div>
+
+  return (
+    <li className={withModifier(CSS.card, CSS.cardOpen, open)}>
+      <button
+        type="button"
+        className={CSS.header}
+        aria-expanded={open}
+        aria-label={`${t(open ? 'collapse' : 'expand')}: ${title}`}
+        onClick={() => {
+          setOpenState(!openState)
+        }}
+      >
+        <span className={CSS.headText}>
+          <span className={CSS.name}>{title}</span>
+          <span className={CSS.description}>{t('intro')}</span>
+        </span>
+        <IconChevronDownOutline14 className={withModifier(CSS.chevron, CSS.chevronOpen, open)} />
+      </button>
+      {open ? body : null}
     </li>
   )
 }

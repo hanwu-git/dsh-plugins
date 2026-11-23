@@ -20,6 +20,19 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
       kind: 'list'
       scope: 'session'
     }
+    /**
+     * Left-nav page in the Settings panel (host: ui-settings-shell). Keyed by an
+     * id the registrant owns; the shell supplies the panel chrome.
+     */
+    'settings.section': {
+      kind: 'list'
+      scope: 'global'
+    }
+    /** The nav glyph for one `settings.section` row, rendered per row id. */
+    'settings.section.icon': {
+      kind: 'keyed'
+      scope: 'global'
+    }
   }
 }
 

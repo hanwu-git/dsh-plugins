@@ -28,6 +28,8 @@ export const CSS = {
   chevron: 'dlc_chevron',
   chevronOpen: 'dlc_chevronOpen',
   body: 'dlc_body',
+  page: 'dlc_page',
+  pageBody: 'dlc_pageBody',
   section: 'dlc_section',
   heading: 'dlc_heading',
   row: 'dlc_row',
@@ -80,6 +82,10 @@ const STYLESHEET = `
 .dlc_chevron{color:var(--dsw-alias-label-tertiary);flex:none;transition:transform .16s}
 .dlc_chevronOpen{transform:rotate(180deg)}
 .dlc_body{border-top:.5px solid var(--dsw-alias-border-l2);margin:0 16px;padding-bottom:8px}
+/* Standalone Settings page: the shell owns the panel chrome, so this container
+   carries no card border, radius, or fold affordances. */
+.dlc_page{display:flex;flex-direction:column;gap:2px;padding:4px 0 16px}
+.dlc_pageBody{display:flex;flex-direction:column}
 .dlc_section{flex-direction:column;gap:6px;padding:12px 0;display:flex}
 .dlc_section+.dlc_section{border-top:.5px solid var(--dsw-alias-border-l2)}
 .dlc_heading{color:var(--dsw-alias-label-primary);margin:0;font-size:13px;font-weight:500;line-height:1.5}
