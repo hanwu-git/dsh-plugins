@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Loomy 模型接入",
+    "description": "把 Loomy 桌面 App 包含的模型直接接入 DSH，开箱即用。输入框显示 Loomy 积分胶囊与模型倍率弹层，设置卡片可查看积分与模型清单。",
+    "detail": "README.md"
+  }
+}

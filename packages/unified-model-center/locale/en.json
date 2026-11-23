@@ -1,4 +1,9 @@
 {
   "name": "Unified Model Center",
-  "description": "One picker for every connected platform, with horizontal provider tabs that survive connector upgrades."
+  "description": "One picker for every connected platform, with horizontal provider tabs that survive connector upgrades.",
+  "meta": {
+    "title": "Unified Model Center",
+    "description": "One wide popup for all connected platforms: horizontal provider tabs, frequency-pinned favorites, cross-provider search, and one-click session model switching. Independent of connector plugins, so connector upgrades cannot change its UI.",
+    "detail": "docs/DETAIL.md"
+  }
 }

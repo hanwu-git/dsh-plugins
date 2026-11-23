@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Loomy Connect",
+    "description": "Use the models included with the Loomy desktop app in DSH with no configuration. Shows a composer credit pill and a model-rate popover, with a settings card for credits and the model list.",
+    "detail": "README.md"
+  }
+}
