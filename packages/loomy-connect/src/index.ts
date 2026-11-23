@@ -53,7 +53,29 @@ export function apply(ctx: Context, config: ConfigShape = {}): void {
   let source: () => ConfigShape = () => config
   const authFile = (): string | undefined => source().authFile
   const configFile = (): string | undefined => source().configFile
-  const activeUserId = (): string | undefined => source().activeUserId
+  /**
+   * The runtime account selection. The config field is the persisted value, but
+   * a write only lands after the editor commits, so this local override makes
+   * the very next request use the new account.
+   */
+  let selectedUserId: string | undefined = config.activeUserId
+  const activeUserId = (): string | undefined => selectedUserId ?? source().activeUserId
+  /**
+   * Persist the chosen account through the profile's config editor. Editing an
+   * ordinary (non-volatile) field restarts the plugin so `apply` rebuilds state,
+   * which is why the local override above exists.
+   */
+  const setActiveAccount = async (userId: string): Promise<void> => {
+    selectedUserId = userId
+    // dsh-doc documents this exact shape (fiber.entry + configEditor.edit); the
+    // published Context typings do not carry either, so read them structurally.
+    const entry = (ctx as unknown as { fiber?: { entry?: unknown } }).fiber?.entry
+    const editor = (ctx as unknown as { get(name: string): unknown }).get('configEditor') as
+      | { edit(entry: unknown, change: (current: ConfigShape) => ConfigShape): Promise<unknown> }
+      | undefined
+    if (entry === undefined || editor === undefined) return
+    await editor.edit(entry, current => ({ ...current, activeUserId: userId }))
+  }
   /** The selected account drives chat requests; points stay on Loomy's own view. */
   const requestCredential = (): Promise<LoomyCredential> => readLoomyCredentialFor(activeUserId(), authFile())
 
@@ -67,6 +89,7 @@ export function apply(ctx: Context, config: ConfigShape = {}): void {
       try { return await requestCredential() } catch { return undefined }
     },
     activeAccount: () => activeUserId(),
+    setActiveAccount,
     accounts: async () => (await readAllLoomyCredentials()).map(account => ({
       userId: account.userId,
       maskedPhone: account.maskedPhone,

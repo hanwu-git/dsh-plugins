@@ -11,6 +11,7 @@ import { LoomyComposerControl } from './LoomyComposerControl.tsx'
 import type { LoomyComposerControlInjected } from './LoomyComposerControl.tsx'
 import { en, zh } from './locales.ts'
 import type { LoomySettingsKey } from './locales.ts'
+import { LOOMY_STATUS_PATH } from '../status-paths.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -50,36 +51,19 @@ export function apply(ctx: ClientContext): void {
     ctx.effect(() => ctx.locale.register(namespace, { zh, en }), 'dsh-loomy-connect: settings copy')
     const t = ctx.locale.bind(namespace) as LoomyPluginCardInjected['t']
 
-    // The selected chat account lives in this plugin's config section. Expose a
-    // narrow read/write face to the card so picking an account sends every later
-    // chat request as that account. The host half reads the same section through
-    // its settings source, so the change takes effect without a restart.
+    // The selected chat account is persisted by the Host, not by this bundle:
+    // the account picker POSTs to the plugin's own status route, which writes the
+    // value through the profile's config editor. Reading the current choice comes
+    // back in the status document (`activeUserId`), so no Client service is
+    // required and the feature survives a host without `configForms`.
     let activeAccount: () => string | undefined = () => undefined
-    let setActiveAccount: (userId: string) => void = () => undefined
-    try {
-      // configForms is a recent Client service and is not yet in the published
-      // Context typings; access it through a narrow structural cast.
-      type ConfigForm = {
-        getSnapshot(): { value?: unknown }
-        subscribe(listener: () => void): () => void
-        mutate(ops: { op: string; path: string[]; value: unknown }[]): void
-      }
-      // Soft lookup: a hard `inject` dependency on a missing service would keep
-      // apply() from running at all and take the card down with it.
-      const configForms = (ctx as unknown as { get(name: string): unknown }).get('configForms') as { get(ns: string): ConfigForm } | undefined
-      if (configForms === undefined) throw new Error('configForms service not present')
-      const form = configForms.get('loomy')
-      const read = () => {
-        const value = (form.getSnapshot().value || {}) as { activeUserId?: string }
-        activeAccount = () => value.activeUserId
-      }
-      read()
-      ctx.effect(() => form.subscribe(read), 'dsh-loomy-connect: active account subscribe')
-      setActiveAccount = (userId: string) => {
-        form.mutate([{ op: 'set', path: ['activeUserId'], value: userId }])
-      }
-    } catch (error: unknown) {
-      console.error('[dsh-loomy-connect] configForms unavailable; account picker is read-only:', error)
+    let setActiveAccount: (userId: string) => void = (userId: string) => {
+      void fetch(LOOMY_STATUS_PATH, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ userId }),
+      }).catch(() => undefined)
     }
 
     ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({

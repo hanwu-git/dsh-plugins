@@ -26,6 +26,8 @@ export interface LoomyStatusRouteOptions {
   credential: () => Promise<LoomyCredential | undefined>
   /** userId the user chose in the settings card, if any. */
   activeAccount?: () => string | undefined
+  /** Persist the chosen account; absent when this profile cannot store config. */
+  setActiveAccount?: (userId: string) => Promise<void>
   /** All signed-in accounts, for the settings card's account picker. */
   accounts?: () => Promise<LoomyWebAccount[]>
   /** Points summary, or `undefined` when Loomy has not cached one. */
@@ -115,16 +117,50 @@ export function loomyStatusHandler(
   deps: LoomyStatusRouteOptions,
 ): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   return async (req, res) => {
-    if (req.method !== 'GET') {
-      json(res, 405, { error: 'method not allowed' })
-      return
-    }
     if (!loopbackRequest(req)) {
       json(res, 403, { error: 'request-not-trusted' })
       return
     }
-    // `?refresh=1` is the card's manual refresh: re-pull before answering.
     const url = new URL(req.url ?? '/', 'http://localhost')
+
+    // POST selects the account future chat requests run as. It is the write
+    // half of the same route so the browser never needs a second endpoint or a
+    // Client service the host may not expose.
+    if (req.method === 'POST') {
+      if (deps.setActiveAccount === undefined) {
+        json(res, 501, { error: 'account selection is not supported in this profile' })
+        return
+      }
+      let body: unknown
+      try {
+        const chunks: Buffer[] = []
+        for await (const chunk of req) chunks.push(Buffer.from(chunk))
+        body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
+      } catch {
+        json(res, 400, { error: 'invalid JSON body' })
+        return
+      }
+      const userId = typeof body === 'object' && body !== null && typeof (body as { userId?: unknown }).userId === 'string'
+        ? (body as { userId: string }).userId.trim()
+        : ''
+      if (userId === '') {
+        json(res, 400, { error: 'userId is required' })
+        return
+      }
+      try {
+        await deps.setActiveAccount(userId)
+        json(res, 200, { ok: true, activeUserId: userId })
+      } catch (error: unknown) {
+        json(res, 500, { error: safeMessage(error) })
+      }
+      return
+    }
+
+    if (req.method !== 'GET') {
+      json(res, 405, { error: 'method not allowed' })
+      return
+    }
+    // `?refresh=1` is the card's manual refresh: re-pull before answering.
     try {
       json(res, 200, await loomyWebStatus(deps, url.searchParams.get('refresh') === '1'))
     } catch (error: unknown) {

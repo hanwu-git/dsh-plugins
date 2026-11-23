@@ -296,6 +296,8 @@ interface LoomyStatusRouteOptions {
   credential: () => Promise<LoomyCredential | undefined>;
   /** userId the user chose in the settings card, if any. */
   activeAccount?: () => string | undefined;
+  /** Persist the chosen account; absent when this profile cannot store config. */
+  setActiveAccount?: (userId: string) => Promise<void>;
   /** All signed-in accounts, for the settings card's account picker. */
   accounts?: () => Promise<LoomyWebAccount[]>;
   /** Points summary, or `undefined` when Loomy has not cached one. */

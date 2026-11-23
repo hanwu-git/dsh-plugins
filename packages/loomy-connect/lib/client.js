@@ -1411,27 +1411,17 @@ window.__ModuleLoader__.load({
 				}), "dsh-loomy-connect: settings copy");
 				const t = ctx.locale.bind(namespace);
 				let activeAccount = () => void 0;
-				let setActiveAccount = () => void 0;
-				try {
-					const configForms = ctx.get("configForms");
-					if (configForms === void 0) throw new Error("configForms service not present");
-					const form = configForms.get("loomy");
-					const read = () => {
-						const value = form.getSnapshot().value || {};
-						activeAccount = () => value.activeUserId;
-					};
-					read();
-					ctx.effect(() => form.subscribe(read), "dsh-loomy-connect: active account subscribe");
-					setActiveAccount = (userId) => {
-						form.mutate([{
-							op: "set",
-							path: ["activeUserId"],
-							value: userId
-						}]);
-					};
-				} catch (error) {
-					console.error("[dsh-loomy-connect] configForms unavailable; account picker is read-only:", error);
-				}
+				let setActiveAccount = (userId) => {
+					fetch(LOOMY_STATUS_PATH, {
+						method: "POST",
+						headers: {
+							"content-type": "application/json",
+							accept: "application/json"
+						},
+						credentials: "same-origin",
+						body: JSON.stringify({ userId })
+					}).catch(() => void 0);
+				};
 				ctx.slots.inject("settings.plugin.item", () => ctx.slots.register({
 					name: "settings.plugin.item",
 					key: "loomy",

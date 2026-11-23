@@ -1002,15 +1002,45 @@ async function loomyWebStatus(deps, force = false) {
 /** The status route's request handler, extracted so tests can mount it on a bare server. */
 function loomyStatusHandler(deps) {
 	return async (req, res) => {
-		if (req.method !== "GET") {
-			json(res, 405, { error: "method not allowed" });
-			return;
-		}
 		if (!loopbackRequest(req)) {
 			json(res, 403, { error: "request-not-trusted" });
 			return;
 		}
 		const url = new URL(req.url ?? "/", "http://localhost");
+		if (req.method === "POST") {
+			if (deps.setActiveAccount === void 0) {
+				json(res, 501, { error: "account selection is not supported in this profile" });
+				return;
+			}
+			let body;
+			try {
+				const chunks = [];
+				for await (const chunk of req) chunks.push(Buffer.from(chunk));
+				body = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+			} catch {
+				json(res, 400, { error: "invalid JSON body" });
+				return;
+			}
+			const userId = typeof body === "object" && body !== null && typeof body.userId === "string" ? body.userId.trim() : "";
+			if (userId === "") {
+				json(res, 400, { error: "userId is required" });
+				return;
+			}
+			try {
+				await deps.setActiveAccount(userId);
+				json(res, 200, {
+					ok: true,
+					activeUserId: userId
+				});
+			} catch (error) {
+				json(res, 500, { error: safeMessage(error) });
+			}
+			return;
+		}
+		if (req.method !== "GET") {
+			json(res, 405, { error: "method not allowed" });
+			return;
+		}
 		try {
 			json(res, 200, await loomyWebStatus(deps, url.searchParams.get("refresh") === "1"));
 		} catch (error) {
@@ -1061,7 +1091,28 @@ function apply(ctx, config = {}) {
 	let source = () => config;
 	const authFile = () => source().authFile;
 	const configFile = () => source().configFile;
-	const activeUserId = () => source().activeUserId;
+	/**
+	* The runtime account selection. The config field is the persisted value, but
+	* a write only lands after the editor commits, so this local override makes
+	* the very next request use the new account.
+	*/
+	let selectedUserId = config.activeUserId;
+	const activeUserId = () => selectedUserId ?? source().activeUserId;
+	/**
+	* Persist the chosen account through the profile's config editor. Editing an
+	* ordinary (non-volatile) field restarts the plugin so `apply` rebuilds state,
+	* which is why the local override above exists.
+	*/
+	const setActiveAccount = async (userId) => {
+		selectedUserId = userId;
+		const entry = ctx.fiber?.entry;
+		const editor = ctx.get("configEditor");
+		if (entry === void 0 || editor === void 0) return;
+		await editor.edit(entry, (current) => ({
+			...current,
+			activeUserId: userId
+		}));
+	};
 	/** The selected account drives chat requests; points stay on Loomy's own view. */
 	const requestCredential = () => readLoomyCredentialFor(activeUserId(), authFile());
 	const catalog = new LoomyCatalog();
@@ -1080,6 +1131,7 @@ function apply(ctx, config = {}) {
 			}
 		},
 		activeAccount: () => activeUserId(),
+		setActiveAccount,
 		accounts: async () => (await readAllLoomyCredentials()).map((account) => ({
 			userId: account.userId,
 			maskedPhone: account.maskedPhone
