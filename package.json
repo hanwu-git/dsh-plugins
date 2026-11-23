@@ -1,0 +1,19 @@
+{
+  "name": "hanwu-dsh-plugins",
+  "version": "1.0.0",
+  "private": true,
+  "description": "老韩自研 DSH 插件集：本地 monorepo + GitHub 发布 + 插件市场索引",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "check": "pnpm -r run check",
+    "index": "node scripts/build-index.mjs",
+    "index:check": "node scripts/build-index.mjs --check"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": ["dsh-plugin", "deepseek-harness", "monorepo", "plugin-market"],
+  "author": "hanwu-git",
+  "license": "MIT"
+}

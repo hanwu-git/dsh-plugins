@@ -1,0 +1,23 @@
+# Node / pnpm
+node_modules/
+*.log
+pnpm-debug.log*
+
+# DSH 本地运行态（不入库）
+.dsh/
+*.dsh-local.*
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 构建产物（各插件如果需要保留 lib/client.js，可单独 -f 加回）
+# dist/
+# lib/
+
+# 临时文件
+*.tmp
+*.bak
+~$*

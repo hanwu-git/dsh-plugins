@@ -1,0 +1,4 @@
+- insert:
+    - id: memory-nodes
+      name: dsh-memory-nodes
+      config: {}

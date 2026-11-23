@@ -1,0 +1,6 @@
+# Credit HUD: the Host half is deliberately empty. Every number the panel shows
+# is read from the other plugins' existing read-only routes, so this bundle only
+# contributes a browser-side sidebar entry + overlay panel.
+- insert:
+    - id: credit-hud
+      name: '@local/credit-hud'

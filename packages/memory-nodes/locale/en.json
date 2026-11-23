@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Memory nodes",
+    "description": "Platform and project level long-term memory. Injects two compiled memory nodes into every session, gives the model memory write/read tools, and re-compiles raw notes into structured memory on demand from the plugin details page.",
+    "detail": "docs/DETAIL.md"
+  }
+}

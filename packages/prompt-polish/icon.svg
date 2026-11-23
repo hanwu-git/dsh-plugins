@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <!-- A prompt line being polished: the wand passes over the text and leaves a
+       brighter stroke behind it. Reads at row size in both themes. -->
+  <path d="M6.5 22.5h11" stroke="#8b949e" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M6.5 27.5h7" stroke="#8b949e" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M6.5 17.5h5.5" stroke="#8b949e" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M25.2 7.2 28.8 10.8 17.4 22.2 13.8 18.6z" stroke="#247bbf" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M15.6 16.8 19.2 20.4" stroke="#247bbf" stroke-width="2" stroke-linecap="round"/>
+  <path d="M28.5 24v5M31 26.5h-5" stroke="#247bbf" stroke-width="1.9" stroke-linecap="round"/>
+</svg>

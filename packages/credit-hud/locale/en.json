@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Credit HUD",
+    "description": "A sidebar-footer entry that opens a floating panel listing the current credit balance of every connected platform: Trae (CN), WorkBuddy, Qoder (CN), Qoder (Global) and Loomy; Doubao Work has no readable balance route yet and shows a placeholder row. Every number is read from the owning plugin's own read-only route; nothing is written."
+  }
+}

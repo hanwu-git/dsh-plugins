@@ -1,0 +1,7 @@
+- insert:
+    - id: unified-model-center
+      name: '@local/unified-model-center'
+      config:
+        hidden: []
+        modelOrder: []
+        providerOrder: []
