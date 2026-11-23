@@ -31,11 +31,11 @@
       "versions": [
         {
           "version": "0.2.0",
-          "publishTimestamp": 1795409177,
+          "publishTimestamp": 1795413749,
           "source": {
             "type": "git",
             "url": "https://github.com/hanwu-git/dsh-plugins",
-            "commit": "238960a27feb038d65b5899f127f31ff3ed25713",
+            "commit": "153bb8541027b557d55beca6065ace6d7ce401fd",
             "path": "packages/loomy-connect"
           },
           "engines": {
@@ -66,11 +66,11 @@
       "versions": [
         {
           "version": "1.0.0",
-          "publishTimestamp": 1795409177,
+          "publishTimestamp": 1795413749,
           "source": {
             "type": "git",
             "url": "https://github.com/hanwu-git/dsh-plugins",
-            "commit": "238960a27feb038d65b5899f127f31ff3ed25713",
+            "commit": "153bb8541027b557d55beca6065ace6d7ce401fd",
             "path": "packages/unified-model-center"
           },
           "engines": {
@@ -101,11 +101,11 @@
       "versions": [
         {
           "version": "1.0.0",
-          "publishTimestamp": 1795409177,
+          "publishTimestamp": 1795413749,
           "source": {
             "type": "git",
             "url": "https://github.com/hanwu-git/dsh-plugins",
-            "commit": "238960a27feb038d65b5899f127f31ff3ed25713",
+            "commit": "153bb8541027b557d55beca6065ace6d7ce401fd",
             "path": "packages/memory-nodes"
           },
           "engines": {
@@ -136,11 +136,11 @@
       "versions": [
         {
           "version": "0.3.0",
-          "publishTimestamp": 1795409177,
+          "publishTimestamp": 1795413749,
           "source": {
             "type": "git",
             "url": "https://github.com/hanwu-git/dsh-plugins",
-            "commit": "238960a27feb038d65b5899f127f31ff3ed25713",
+            "commit": "153bb8541027b557d55beca6065ace6d7ce401fd",
             "path": "packages/prompt-polish"
           },
           "engines": {
@@ -171,11 +171,11 @@
       "versions": [
         {
           "version": "0.1.0",
-          "publishTimestamp": 1795409177,
+          "publishTimestamp": 1795413749,
           "source": {
             "type": "git",
             "url": "https://github.com/hanwu-git/dsh-plugins",
-            "commit": "238960a27feb038d65b5899f127f31ff3ed25713",
+            "commit": "153bb8541027b557d55beca6065ace6d7ce401fd",
             "path": "packages/credit-hud"
           },
           "engines": {
