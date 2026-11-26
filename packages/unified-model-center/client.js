@@ -784,11 +784,28 @@ window.__ModuleLoader__.load({
         }
       }, [busy, modelDirectories, sessionId])
 
+      // A model id is only unique WITHIN one provider: several connectors ship
+      // the same slug (e.g. `deepseek-v4.1-flash` exists on both Trae and
+      // WorkBuddy). Comparing the id alone therefore marked a foreign provider's
+      // row as "current" and painted the wrong row with a check + highlight.
+      // Match the provider too. The host reports its real provider id, which may
+      // be a region variant (`workbuddy-global`), so accept either the catalog
+      // id or the providerId prefix.
+      const providerOf = p => String(p.providerId || p.id)
+      const matchesProvider = (p, provider) => {
+        if (provider == null) return false
+        const id = String(provider)
+        const base = providerOf(p)
+        return id === base || id === p.id || id.startsWith(base + '-') || base.startsWith(id + '-')
+      }
+      const isCurrent = (p, m) => current != null && current.model === m.id && matchesProvider(p, current.provider)
+
       // Exact provider+model match against the live catalog; never use the
       // '/'-suffix shortcut, which mislabels same-named models on other providers.
       let triggerLabel = '模型中心 · 选择模型'
       if (current) {
         for (const p of visibleProviders) {
+          if (!matchesProvider(p, current.provider)) continue
           const m = p.models.find(x => x.id === current.model)
           if (m) { triggerLabel = '模型中心 · ' + p.label + ' ' + m.name; break }
         }
@@ -810,7 +827,7 @@ window.__ModuleLoader__.load({
           h('div', { className: 'umc-group' }, '搜索结果 · ' + hits.length + ' 项（跨全部连接）'),
           hits.length ? hits.map(([p, m], i) => h(Row, {
             key: p.id + ':' + m.id + ':' + i, provider: p, model: m,
-            current: current && current.model === m.id, showSource: true, onPick: doPick,
+            current: isCurrent(p, m), showSource: true, onPick: doPick,
           })) : h('div', { className: 'umc-empty' }, '没有匹配的模型'))
       } else if (activeProvider) {
         const favs = []
@@ -826,13 +843,13 @@ window.__ModuleLoader__.load({
               h('span', { className: 'umc-star' }, '★'), ' ' + activeProvider.label + ' 常用 · 按使用频率'),
             favs.slice(0, 3).map(([m]) => h(Row, {
               key: 'f:' + m.id, provider: activeProvider, model: m,
-              current: current && current.model === m.id, showFreq: true, freqMax, onPick: doPick,
+              current: isCurrent(activeProvider, m), showFreq: true, freqMax, onPick: doPick,
             }))
           ) : null,
           h('div', { className: 'umc-group' }, activeProvider.label + ' · 全部 ' + activeProvider.models.length + ' 个模型'),
           activeProvider.models.length ? activeProvider.models.map(m => h(Row, {
             key: m.id, provider: activeProvider, model: m,
-            current: current && current.model === m.id, onPick: doPick,
+            current: isCurrent(activeProvider, m), onPick: doPick,
           })) : h('div', { className: 'umc-empty' },
             activeProvider.signedIn ? '该连接暂无模型' : ('未登录：' + (activeProvider.error || '请先在客户端登录')))
         )
@@ -883,7 +900,15 @@ window.__ModuleLoader__.load({
           type: 'button', className: 'umc-trigger', 'aria-expanded': open, 'aria-haspopup': 'dialog',
           title: '统一模型中心 · 切换所有已连接平台的模型',
           onMouseDown: e => e.preventDefault(),
-          onClick: () => setOpen(o => !o),
+          // Opening the popup lands on the provider that actually serves the
+          // session's model, instead of a fixed default tab.
+          onClick: () => setOpen(o => {
+            if (!o) {
+              const owner = current && visibleProviders.find(p => matchesProvider(p, current.provider))
+              if (owner) setActiveTab(owner.id)
+            }
+            return !o
+          }),
         },
           h('span', { className: 'umc-dot' }),
           h('span', { className: 'umc-label' }, triggerLabel),
