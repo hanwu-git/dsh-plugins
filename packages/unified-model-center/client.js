@@ -19,6 +19,8 @@ window.__ModuleLoader__.load({
     const FREQ_KEY = 'umc:freq:v1'
     const HIDDEN_CLASS = 'umc-active'
     const LOCALE_NS = 'settings.unifiedModelCenter'
+    const UPDATE_CHECK_PATH = '/plugins/unified-model-center/check-updates'
+    const UPDATE_IGNORE_KEY = 'umc:update-ignore:v1'
 
     const LOCALE = {
       zh: {
@@ -30,6 +32,8 @@ window.__ModuleLoader__.load({
         hiddenCount: '已隐藏 {count} 个模型', loading: '正在读取连接器模型…',
         noResults: '没有匹配的模型', noModels: '连接器里没有可用模型（请先在对应客户端登录）', moveUp: '上移', moveDown: '下移',
         effort: '思考', image: '生图', refresh: '重新获取模型', refreshing: '获取中…', refreshed: '已重新获取', refreshFailed: '获取失败：',
+        updateTitle: '插件有更新', updateFound: '发现 {count} 个自研插件有新版本：', updateGo: '前往插件页更新', updateCancel: '稍后再说',
+        updateIgnore: '忽略此版本', updateNone: '已是最新', updateCheckFail: '更新检测暂不可用',
       },
       en: {
         nav: 'Model Center',
@@ -40,6 +44,8 @@ window.__ModuleLoader__.load({
         hiddenCount: '{count} models hidden', loading: 'Loading connector models…',
         noResults: 'No matching models', noModels: 'No models available (sign in to the clients first)', moveUp: 'Move up', moveDown: 'Move down',
         effort: 'thinking', image: 'image', refresh: 'Re-fetch models', refreshing: 'Fetching…', refreshed: 'Re-fetched', refreshFailed: 'Fetch failed: ',
+        updateTitle: 'Plugin updates', updateFound: '{count} self-built plugins have new versions:', updateGo: 'Open Plugins to update', updateCancel: 'Later',
+        updateIgnore: 'Ignore this version', updateNone: 'Up to date', updateCheckFail: 'Update check unavailable',
       },
     }
     function tr(t, key, vars) {
@@ -304,6 +310,23 @@ window.__ModuleLoader__.load({
       .umc-foot .umc-msg.err{color:var(--dsw-alias-state-error-primary,#ff8080)}
       .umc-foot .umc-msg.ok{color:var(--dsw-alias-state-success-primary,#6ee79b)}
       .umc-empty{padding:18px;text-align:center;color:var(--dsw-alias-label-tertiary,#6e6e78);font-size:12px}
+      /* ---- update notice ---- */
+      .umc-upd-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100001;display:flex;align-items:center;justify-content:center}
+      .umc-upd{width:min(620px,calc(100vw - 32px));max-height:min(80vh,700px);display:flex;flex-direction:column;
+        background:var(--dsw-alias-bg-layer-2,#202024);border:1px solid var(--dsw-alias-border-l2,#3d3d45);border-radius:14px;
+        box-shadow:0 18px 60px rgba(0,0,0,.6);color:var(--dsw-alias-label-primary,#e8e8ea);overflow:hidden}
+      .umc-upd-hd{padding:14px 18px;border-bottom:.5px solid var(--dsw-alias-border-l2,#3d3d45);font-size:15px;font-weight:600}
+      .umc-upd-body{padding:10px 18px;overflow:auto;flex:1}
+      .umc-upd-lead{font-size:12px;color:var(--dsw-alias-label-secondary,#9a9aa2);margin-bottom:8px}
+      .umc-upd-item{border:.5px solid var(--dsw-alias-border-l2,#3d3d45);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--dsw-alias-bg-layer-3,rgba(128,128,128,.06))}
+      .umc-upd-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+      .umc-upd-name small{font-weight:400;color:var(--dsw-alias-label-tertiary,#6e6e78)}
+      .umc-upd-log{font-size:11px;line-height:1.6;color:var(--dsw-alias-label-secondary,#9a9aa2);white-space:pre-wrap;margin-top:6px;max-height:160px;overflow:auto}
+      .umc-upd-ft{padding:10px 18px;border-top:.5px solid var(--dsw-alias-border-l2,#3d3d45);display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+      .umc-upd-btn{appearance:none;font:inherit;font-size:12px;line-height:1.5;cursor:pointer;border:.5px solid var(--dsw-alias-border-l3,#4a4a55);
+        border-radius:8px;padding:5px 12px;background:transparent;color:var(--dsw-alias-label-primary,#e8e8ea)}
+      .umc-upd-btn:hover{background:var(--dsw-alias-bg-layer-3,rgba(128,128,128,.16))}
+      .umc-upd-btn.primary{background:var(--dsw-alias-brand-primary,#4f8cff);border-color:transparent;color:#fff}
       /* Hide the native picker anchor when our component explicitly marks it.
          The class is applied by JS only after the anchor is located, so a
          failed detection never hides the user's only picker. */
@@ -414,6 +437,22 @@ window.__ModuleLoader__.load({
       if (typeof document !== 'undefined') {
         document.querySelectorAll('.' + NATIVE_HIDDEN_CLASS).forEach(el => el.classList.remove(NATIVE_HIDDEN_CLASS))
       }
+    }
+
+    /* ---- update notice helpers ---- */
+    function readIgnored() {
+      try { return JSON.parse(localStorage.getItem(UPDATE_IGNORE_KEY) || '{}') || {} } catch { return {} }
+    }
+    function isIgnored(name, version) {
+      const ignored = readIgnored()
+      return typeof ignored[name] === 'string' && ignored[name] === version
+    }
+    function ignoreVersion(name, version) {
+      try {
+        const ignored = readIgnored()
+        ignored[name] = version
+        localStorage.setItem(UPDATE_IGNORE_KEY, JSON.stringify(ignored))
+      } catch { /* private mode: ignoring is best-effort */ }
     }
 
     function fmtCtx(n) {
@@ -616,6 +655,53 @@ window.__ModuleLoader__.load({
       )
     }
 
+    /* ---------------- update notice ----------------
+     * The Host polls 5 self-built bundles 30 s after startup. We only render a
+     * notice for versions the user has not chosen to ignore. "Update" navigates
+     * to the Plugins page (least invasive: no auto-install behind the user's
+     * back); "Ignore" remembers the version so it will not be shown again until
+     * a newer one appears.
+     */
+    function openPluginsPage() {
+      try {
+        // Preferred: the shell exposes a sidebar tab for the Plugins page.
+        const nav = document.querySelector('[data-nav-id="plugins"], [data-sidebar-item="plugins"], [data-tab="plugins"]')
+        if (nav && typeof nav.click === 'function') { nav.click(); return }
+      } catch { /* fall through to a plain message */ }
+      // No stable public navigation API across DSH builds: surface the command
+      // so the user can act without us guessing internal DOM.
+      window.prompt('打开插件页更新：设置 → 插件；或在终端运行：', 'dsh plugin add hanwu-git/dsh-plugins')
+    }
+
+    function UpdateNotice({ t, updates, onClose }) {
+      const go = (name) => {
+        ignoreVersion(name, '__go__')
+        onClose()
+        openPluginsPage()
+      }
+      return h('div', { className: 'umc-upd-mask', onMouseDown: e => { if (e.target && e.target.className === 'umc-upd-mask') onClose() } },
+        h('div', { className: 'umc-upd', role: 'dialog', 'aria-label': t('updateTitle') },
+          h('div', { className: 'umc-upd-hd' }, t('updateTitle')),
+          h('div', { className: 'umc-upd-body' },
+            h('div', { className: 'umc-upd-lead' }, tr(t, 'updateFound', { count: updates.length })),
+            updates.map(u => h('div', { key: u.name, className: 'umc-upd-item' },
+              h('div', { className: 'umc-upd-name' }, u.title || u.name,
+                h('small', null, u.installed + ' → ' + u.latest)),
+              u.changelog ? h('div', { className: 'umc-upd-log' }, u.changelog) : null,
+            ))
+          ),
+          h('div', { className: 'umc-upd-ft' },
+            h('button', { type: 'button', className: 'umc-upd-btn', onClick: () => {
+              for (const u of updates) ignoreVersion(u.name, u.latest)
+              onClose()
+            } }, t('updateIgnore')),
+            h('button', { type: 'button', className: 'umc-upd-btn', onClick: onClose }, t('updateCancel')),
+            h('button', { type: 'button', className: 'umc-upd-btn primary', onClick: () => go(updates[0] && updates[0].name) }, t('updateGo')),
+          )
+        )
+      )
+    }
+
     /* ---------------- main control ---------------- */
     function UnifiedModelControl(props) {
       // sessionId arrives as the FIRST positional argument of the slot's inject
@@ -634,10 +720,27 @@ window.__ModuleLoader__.load({
       const [busy, setBusy] = useState(false)
       const [notice, setNotice] = useState(null)
       const [refreshing, setRefreshing] = useState(null)
+      const [updateNotice, setUpdateNotice] = useState(null)
       const rootRef = useRef(null)
       const panelRef = useRef(null)
 
       useEffect(() => { ensureStyles() }, [])
+
+      // 30 s after startup, check the five self-built bundles for updates.
+      // A session-start timer means one check per DSH launch, not per refresh.
+      useEffect(() => {
+        let alive = true
+        const timer = window.setTimeout(async () => {
+          try {
+            const res = await fetch(UPDATE_CHECK_PATH, { headers: { accept: 'application/json' }, credentials: 'same-origin' })
+            if (!res.ok) return
+            const data = await res.json()
+            const fresh = (data.updates || []).filter(u => !isIgnored(u.name, u.latest))
+            if (alive && fresh.length) setUpdateNotice(fresh)
+          } catch { /* update check is best-effort, never blocks the picker */ }
+        }, 30_000)
+        return () => { alive = false; window.clearTimeout(timer) }
+      }, [])
 
       // Suppress the native picker only after our trigger is in the DOM.
       // If detection fails, both pickers stay visible (no picker-less state).
@@ -913,7 +1016,13 @@ window.__ModuleLoader__.load({
           h('span', { className: 'umc-dot' }),
           h('span', { className: 'umc-label' }, triggerLabel),
           h('span', { className: 'umc-caret' }, '▾')),
-        popover)
+        popover,
+        updateNotice && typeof document !== 'undefined' && document.body
+          ? reactDom.createPortal(
+              h(UpdateNotice, { t, updates: updateNotice, onClose: () => setUpdateNotice(null) }),
+              document.body)
+          : null
+      )
     }
 
     return {

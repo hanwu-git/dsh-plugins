@@ -24,7 +24,8 @@
     "README.en.md",
     "LICENSE",
     "locale/*.json",
-    "icon.svg"
+    "icon.svg",
+    "CHANGELOG.md"
   ],
   "license": "MIT",
   "repository": {

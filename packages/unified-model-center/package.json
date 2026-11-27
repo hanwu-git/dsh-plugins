@@ -1,6 +1,6 @@
 {
   "name": "@local/unified-model-center",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Unified model picker that groups every connected provider in one horizontal-tab popup, independent of connector plugin upgrades.",
@@ -16,7 +16,8 @@
     "cordis.patch.yml",
     "locale/*.json",
     "docs",
-    "icon.svg"
+    "icon.svg",
+    "CHANGELOG.md"
   ],
   "peerDependencies": {
     "@deepseek-ai/schemastery": ">=3.18.0 <4.0.0"
