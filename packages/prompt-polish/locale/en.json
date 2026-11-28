@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "Prompt polish",
-    "description": "Adds a button under the composer that rewrites the prompt currently in it. Click once to fix grammar, ambiguity, and structure while keeping your intent and length; double-click to rewrite the rough text into a structured prompt with an explicit goal, context, requirements, and expected output. The result replaces the draft in place, and an Undo appears for a few seconds so a bad rewrite costs one click. Polishing uses the model you have selected in the session, and each click is one model request. Nothing is saved: the Host appends no session event and stores no draft. Turning the plugin off removes the button."
-  }
-}

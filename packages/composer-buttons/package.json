@@ -1,9 +1,9 @@
 {
-  "name": "@local/prompt-polish",
-  "version": "0.3.0",
+  "name": "@local/composer-buttons",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Adds a button under the composer that rewrites the prompt in place: click to polish, double-click to restructure.",
+  "description": "One row of configurable composer buttons — prompt polish, page refresh, app restart — each with a description and an on/off switch in the plugin settings.",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -27,12 +27,17 @@
       "platform": "web",
       "immediately": true,
       "inject": [
-        "@deepseek-ai/dsh-client-ui-conversation"
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-locale"
       ]
     }
   },
   "engines": {
     "node": ">=22",
     "dsh": ">=0.2.2-0 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": ">=3.18.0 <4.0.0"
   }
 }

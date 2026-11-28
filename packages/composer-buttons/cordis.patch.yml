@@ -1,0 +1,23 @@
+# Composer buttons: one row of configurable composer buttons.
+#
+# The Host half registers the polish route (model call) and the restart route
+# (detached PowerShell helper); the browser half renders the row plus the
+# settings surfaces (Plugins-page row config + own settings nav page).
+- insert:
+    - id: composer-buttons-host
+      name: '@local/composer-buttons'
+      config:
+        timeoutMs: 45000
+        maxOutputTokens: 1500
+        exePath: 'D:\Program Files\DHS\DeepSeek Harness.exe'
+        delayMs: 3000
+        buttons:
+          polish:
+            visible: true
+            note: ''
+          refresh:
+            visible: true
+            note: ''
+          restart:
+            visible: true
+            note: ''

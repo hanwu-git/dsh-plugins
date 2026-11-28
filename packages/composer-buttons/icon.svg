@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Wand: polish -->
+  <path d="M4 20 11 13" />
+  <path d="M13.5 4.5 15 3M19.5 8.5 21 7M17 3l.7 1.6M20.4 11l1.6.7M14.8 6.6l1.2 1.2M17.2 9l1.2 1.2" />
+  <!-- Refresh arc -->
+  <path d="M14 20a7 7 0 1 0 7-7" />
+  <path d="M21 17v-4h-4" />
+</svg>
