@@ -25,7 +25,9 @@ window.__ModuleLoader__.load({
       platformTitle: '平台级记忆节点',
       platformIntro: '跨项目通用事实：用户偏好、通用约定、稳定结论。',
       projectTitle: '项目级记忆节点',
-      projectIntro: '按工作区隔离的项目记忆；每个工作区一份。',
+      projectIntro: '按工作区隔离的项目记忆；下拉选择项目查看对应记忆内容。',
+      projectLabel: '选择项目',
+      projectEmpty: '暂无项目记忆 —— 在对应工作区让模型写入原始记录后出现。',
       workspaceLabel: '工作区：{path}',
       compiledBytes: '编译层字节',
       rawCount: '原始记录',
@@ -55,7 +57,9 @@ window.__ModuleLoader__.load({
       platformTitle: 'Platform memory node',
       platformIntro: 'Cross-project facts: user preferences, shared conventions, stable conclusions.',
       projectTitle: 'Project memory nodes',
-      projectIntro: 'Per-workspace memory; one node per workspace.',
+      projectIntro: 'Per-workspace memory; pick a project from the dropdown to view its memory.',
+      projectLabel: 'Select project',
+      projectEmpty: 'No project memory yet — records appear after the model writes them in a workspace.',
       workspaceLabel: 'Workspace: {path}',
       compiledBytes: 'Compiled bytes',
       rawCount: 'Raw records',
@@ -98,6 +102,11 @@ window.__ModuleLoader__.load({
 .dmn-statLabel{color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:17px}
 .dmn-statValue{font-size:16px;line-height:24px;font-weight:600;font-variant-numeric:tabular-nums}
 .dmn-meta{color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:17px;margin:0}
+.dmn-selectRow{display:flex;align-items:center;gap:8px}
+.dmn-selectLabel{color:var(--dsw-alias-label-secondary);font-size:12px;white-space:nowrap}
+.dmn-select{border:0.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;line-height:18px;padding:5px 9px;max-width:100%;min-width:0;flex:1}
+.dmn-select:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:1px}
+.dmn-select option{background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
 .dmn-previewTitle{color:var(--dsw-alias-label-secondary);font-size:11px;margin:0}
 .dmn-pre{margin:0;border:0.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary);font-family:var(--ds-font-family-code,monospace);font-size:11px;line-height:17px;padding:10px 12px;max-height:220px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
 `
@@ -166,6 +175,8 @@ window.__ModuleLoader__.load({
       const [busyKey, setBusyKey] = useState(null)
       const [notice, setNotice] = useState(undefined)
       const [actionError, setActionError] = useState(undefined)
+      // Selected project workspace path; '' = auto-pick the first project.
+      const [selectedProject, setSelectedProject] = useState('')
 
       const load = useCallback(async () => {
         try {
@@ -193,6 +204,15 @@ window.__ModuleLoader__.load({
         } finally { setBusyKey(null) }
       }, [api, load, t])
 
+      const platformNodes = (nodes ?? []).filter(entry => entry.node === 'platform')
+      const projectNodes = (nodes ?? []).filter(entry => entry.node !== 'platform')
+      // Auto-pick the first project while the current selection is absent
+      // (initial load, or the selected workspace disappeared after a refresh).
+      const effectiveProject = projectNodes.some(p => p.workspacePath === selectedProject) || projectNodes.length === 0
+        ? selectedProject
+        : (projectNodes[0]?.workspacePath ?? '')
+      const activeProject = projectNodes.find(p => p.workspacePath === effectiveProject)
+
       return h('div', { className: 'dmn-root' },
         h('style', null, CSS),
         h('div', { className: 'dmn-head' },
@@ -206,13 +226,39 @@ window.__ModuleLoader__.load({
         loadError !== undefined ? h('div', { className: 'dmn-error', role: 'alert' }, t('loadFailed', { message: loadError })) : null,
         actionError !== undefined ? h('div', { className: 'dmn-error', role: 'alert' }, t('compileFailed', { message: actionError })) : null,
         nodes === undefined ? h('p', { className: 'dmn-intro' }, t('loading')) : null,
-        (nodes ?? []).map(entry => h(NodeCard, {
+        platformNodes.map(entry => h(NodeCard, {
           key: entry.node + (entry.workspacePath ?? ''),
           t,
           entry,
           busy: busyKey === entry.node + (entry.workspacePath ?? ''),
           onCompile: compileOne,
         })),
+        projectNodes.length > 0 ? h('section', { className: 'dmn-card' },
+          h('div', { className: 'dmn-cardHead' },
+            h('div', null,
+              h('p', { className: 'dmn-cardTitle' }, t('projectTitle')),
+              h('p', { className: 'dmn-cardIntro' }, t('projectIntro')),
+            ),
+          ),
+          h('div', { className: 'dmn-selectRow' },
+            h('label', { className: 'dmn-selectLabel', htmlFor: 'dmn-project-select' }, t('projectLabel')),
+            h('select', {
+              id: 'dmn-project-select',
+              className: 'dmn-select',
+              value: effectiveProject,
+              onChange: (e) => setSelectedProject(e.target.value),
+            }, projectNodes.map(p => h('option', {
+              key: p.workspacePath ?? '',
+              value: p.workspacePath ?? '',
+            }, p.workspacePath ?? ''))),
+          ),
+          activeProject ? h(NodeCard, {
+            t,
+            entry: activeProject,
+            busy: busyKey === activeProject.node + (activeProject.workspacePath ?? ''),
+            onCompile: compileOne,
+          }) : null,
+        ) : (nodes !== undefined ? h('p', { className: 'dmn-intro' }, t('projectEmpty')) : null),
       )
     }
 

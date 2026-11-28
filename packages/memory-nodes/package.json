@@ -1,6 +1,6 @@
 {
   "name": "dsh-memory-nodes",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Platform and project level long-term memory nodes for the DeepSeek Harness",

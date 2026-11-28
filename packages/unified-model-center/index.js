@@ -25,7 +25,7 @@ export const WATCHED_PLUGINS = [
   { name: 'dsh-loomy-connect', dir: 'dsh-loomy-connect', dirAlt: null },
   { name: '@local/unified-model-center', dir: '@local/unified-model-center', dirAlt: null },
   { name: 'dsh-memory-nodes', dir: 'dsh-memory-nodes', dirAlt: null },
-  { name: '@local/prompt-polish', dir: '@local/prompt-polish', dirAlt: null },
+  { name: '@local/composer-buttons', dir: '@local/composer-buttons', dirAlt: 'composer-buttons' },
   { name: '@local/credit-hud', dir: '@local/credit-hud', dirAlt: null },
 ]
 
@@ -76,8 +76,7 @@ async function fetchText(url, ms = 8000) {
   return res.text()
 }
 
-async function checkUpdates() {
-  const profileDir = process.env.DSH_PROFILE_DIR
+async function checkUpdates(profileDir) {
   if (!profileDir) return { ok: false, error: 'profile directory unavailable' }
   let index
   try {
@@ -109,16 +108,23 @@ async function checkUpdates() {
   return { ok: true, checkedAt: Date.now(), updates }
 }
 
-function handler(req, res) {
-  void (async () => {
-    if (!isLoopback(req)) return json(res, 403, { error: 'request-not-trusted' })
-    if (req.method !== 'GET') return json(res, 405, { error: 'method not allowed' })
-    try {
-      json(res, 200, await checkUpdates())
-    } catch (error) {
-      json(res, 500, { error: String(error && error.message || error) })
-    }
-  })()
+function handler(ctx) {
+  return (req, res) => {
+    void (async () => {
+      if (!isLoopback(req)) return json(res, 403, { error: 'request-not-trusted' })
+      if (req.method !== 'GET') return json(res, 405, { error: 'method not allowed' })
+      try {
+        // DSH_PROFILE_DIR is injected into shell-call environments only, not
+        // into the Host process itself; the profile context service carries
+        // the same directory at runtime.
+        const profile = ctx.get('profileContext')
+        const profileDir = profile ? profile.dir : process.env.DSH_PROFILE_DIR
+        json(res, 200, await checkUpdates(profileDir))
+      } catch (error) {
+        json(res, 500, { error: String(error && error.message || error) })
+      }
+    })()
+  }
 }
 
 export function apply(ctx) {
@@ -127,7 +133,7 @@ export function apply(ctx) {
       const dispose = webCtx.webServer.register({
         kind: 'exact',
         path: UPDATE_CHECK_PATH,
-        handler,
+        handler: handler(ctx),
       })
       return () => { dispose() }
     }, 'unified-model-center: update check route')
