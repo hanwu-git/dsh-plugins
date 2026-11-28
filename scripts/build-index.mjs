@@ -39,7 +39,7 @@ const PLUGIN_DIRS = [
   'loomy-connect',
   'unified-model-center',
   'memory-nodes',
-  'prompt-polish',
+  'composer-buttons',
   'credit-hud',
 ]
 
@@ -159,11 +159,11 @@ if (errs.length) {
   process.exit(1)
 }
 if (CHECK_ONLY) {
-  console.log(`index OK: ${idx.plugins.length} plugins, ${idx.plugins[0].versions[0].commit.slice(0, 8)}`)
+  console.log(`index OK: ${idx.plugins.length} plugins, commit ${idx.plugins[0].versions[0].source.commit.slice(0, 8)}`)
   process.exit(0)
 }
 writeFileSync(OUT, JSON.stringify(idx, null, 2) + '\n', 'utf8')
-console.log(`wrote ${OUT}: ${idx.plugins.length} plugins, commit ${idx.plugins[0].versions[0].source.commit}`)
+console.log(`wrote ${OUT}: ${idx.plugins.length} plugins, commit ${idx.plugins[0].versions[0].source.commit.slice(0, 8)}`)
 
 // 二次校验：用 DSH 官方校验器验证生成的索引（devDependency）。
 // 官方校验通过才允许发布；失败则退出非零，避免发布无效索引。
